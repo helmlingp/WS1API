@@ -1,2 +1,2 @@
 # WS1API
- API Functions used in other scripts
+ Powershell module for common Airwatch / Workspace ONE UEM calls
