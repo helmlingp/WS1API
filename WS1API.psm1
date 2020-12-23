@@ -1,4 +1,106 @@
-﻿
+﻿<#
+ .Synopsis
+  A collection of useful functions for interacting with VMware Workspace ONE UEM RestAPI
+
+ .Description
+  The following functions are currently provided:
+  - Get-OG, (requires Write-Log2, Invoke-AWApiCommand)
+  - Invoke-AWApiCommand, (requires Write-Log2)
+  - Get-CurrentLoggedonUser, (requires GetWin32User.cs in the smae folder)
+  - Get-UserSIDLookup, (requires Get-CurrentLoggedonUser)
+  - Get-ReverseSID, 
+  - Write-Log, 
+  - Write-Log2, (requires Write-Log)
+  - Write-2Report.
+
+ .Example
+   # Get OG from provided name
+   $OGSearch = Get-OG -WSOServer $script:WSOServer -Cred $script:cred -ApiKey $script:ApiKey -OrgGroup $script:OrgGroup -Debug $Debug
+   $script:groupuuid = $OGSearch.OrganizationGroups[0].Uuid;
+
+ .Example
+   # Main function machine RestAPI call
+   $WebRequest = Invoke-AWApiCommand -Method Get -Endpoint $APIEndpoint -ApiVersion $ApiVersion -Auth $Script:cred -Apikey $Script:apikey -Debug $Debug
+
+ .Example
+   # Get Currently Logged on User in active console session. Returns username
+   $getuser = Get-CurrentLoggedonUser
+
+ .Example
+   # Return user SID for specified user
+   $getuserSID = Get-UserSIDLookup -UsernameLookup user1
+   
+   # Return user SID for current user
+   $getuserSID = Get-UserSIDLookup
+   or
+   $getuserSID = Get-UserSIDLookup -UsernameLookup (Current_user)
+
+ .Example
+   # Return user/group name from SID
+   $getuserfromSID = Get-ReverseSID -SID S-1-12-.....
+
+   # Return username from SID (default)
+   $getuserfromSID = Get-ReverseSID -SID S-1-12-..... -ignoreGroups $true
+   
+ .Example
+   # Writes messages in easily readable log file format to screen and log file. 
+   
+   For example:
+   $Write-Log -Message "WebRequest.StatusCode: 200" -Path "path_to_log_file"
+   writes the following into the "path_to_log_file"
+        2020-12-23 11:23:33 INFO: WebRequest.StatusCode: 200
+   and displays the following to the screen in Yellow
+        VERBOSE: WebRequest.StatusCode: 200
+
+   $Write-Log -Message "WebRequest.StatusCode: 200" -Path "path_to_log_file" -Level "Info" -NoClobber
+   
+   -Message "text to write"
+   -Path "path_to_log_file". Will create file if it doesn't exist
+   -NoClobber will not overwrite existing file and error to screen if it exists
+   -Level options include "Error","Warn","Info"
+        Error -writes MESSAGE to error stream, Write-Error: MESSAGE to screen, and DATETIME: WARNING: MESSAGE to log file
+        Warn -writes WARNING: message to screen and DATETIME: WARNING: MESSAGE to log file
+        Info -writes VERBOSE: message to screen and DATETIME: INFO: MESSAGE to log file
+
+ .Example
+   # Wrapper function on top of Write-Log. Adding -UseLocal changes output to screen and log file.
+   For example:
+   $Write-Log2 -Message "WebRequest.StatusCode: 200" -Path "path_to_log_file" -Level "Warn" -UseLocal
+   writes the following into the "path_to_log_file"
+        2020-12-23 11:23:33     (WARN)     WebRequest.StatusCode: 200
+   and displays the following to the screen in Yellow
+        MethodName::WARN    WebRequest.StatusCode: 200
+
+        Note: this function is not complete
+
+   -Level options include "Success", "Error", "Warn", "Info". Each Level writes to screen in different colour:
+        "Success" = Green
+        "Error" = Red
+        "Warn" = Yellow
+        "Info" = White
+   -UseLocal should not be used at this stage. If not used, function calls Write-Log function.
+
+ .Example
+   # Function to write in more of a Report format. Writes to log / report file as well as screen
+   For example:
+   Write-2Report -Path "path_to_log_file" -Message "WS1 Baseline Report" -Level "Title"
+   writes the following to "path_to_log_file" 
+   ************************************************************************
+
+	 WS1 Baseline Report
+
+	 Wednesday, December 23, 2020 12:48 PM
+
+   ************************************************************************
+
+   Write-2Report -Path $Script:Path -Message "Completed report on Non-Compliant Devices and Settings for $BaselineName Baseline in $BaselineParentOG" -Level "Footer"
+   writes the following to "path_to_log_file" 
+   ************************************************************************
+
+	 Completed report on All Devices and Settings for LOB1 Baseline in EUC Office of the CTO
+
+   ************************************************************************
+   #>
 <# function Get-AWAPIConfiguration{
     if(Test-Path "$current_path\api-debug.config"){
         $useDebugConfig = $true;
@@ -282,18 +384,19 @@ function Invoke-AWApiCommand{
         
     } Catch{
         $ErrorMessage = $_.Exception.Message;
-        If($Debug){ Write-Log2 -Path $logLocation -Message "An error has occurrred.  Error: $ErrorMessage"}
+        #If($Debug){ Write-Log2 -Path $logLocation -Message "An error has occurrred.  Error: $ErrorMessage"}
+        Write-Log2 -Path $logLocation -Message "An error has occurrred.  Error: $ErrorMessage" -Level "Error"
         if($_.Exception -like "Unable to connect to the remote server"){
             return "Offline";
         } 
     }
 
     If($Debug){
-        Write-Log2 -Path $logLocation -Message "Connecting to: $Endpoint";
+        Write-Log2 -Path $logLocation -Message "Connecting to: $Endpoint" -Level "Info";
         $statuscode = $WebRequest.StatusCode
         If($WebRequest.Content){
-            Write-Log2 -Path $logLocation -Message "WebRequest.StatusCode: $statuscode";
-            Write-Log2 -Path $logLocation -Message $WebRequest.Content;
+            Write-Log2 -Path $logLocation -Message "WebRequest.StatusCode: $statuscode" -Level "Info";
+            Write-Log2 -Path $logLocation -Message $WebRequest.Content -Level "Info";
         }
     }
 
@@ -429,8 +532,8 @@ function Write-Log {
 
         [Parameter(Mandatory=$false)]
         [Alias('LogPath')]
-        #[string]$Path=$logLocation,
-        [string]$Path,
+        [Alias('LogLocation')]
+        [string]$Path=$Local:Path,
 
         [Parameter(Mandatory=$false)]
         [ValidateSet("Error","Warn","Info")]
@@ -444,6 +547,21 @@ function Write-Log {
     {
         # Set VerbosePreference to Continue so that verbose messages are displayed.
         $VerbosePreference = 'Continue'
+
+        if(!$Path){
+            $current_path = $PSScriptRoot;
+            if($PSScriptRoot -eq ""){
+                #default path
+                $current_path = "C:\Temp";
+            }
+    
+            #setup Report/Log file
+            $DateNow = Get-Date -Format "yyyyMMdd_hhmm";
+            $pathfile = "$current_path\WS1API_$DateNow";
+            $Local:logLocation = "$pathfile.log";
+            $Local:Path = $logLocation;
+        }
+        
     }
     Process
     {
@@ -491,30 +609,32 @@ function Write-Log {
     }
 }
 
-function Write-Log2{ #Wrapper function to made code easier to read;
+function Write-Log2{
     [CmdletBinding()]
     Param
     (
         [string]$Message,
-        [string]$Path,
-        #[string]$Path="$current_path\$MyInvocation.MyCommand.Name.log",
+        
+        [Alias('LogPath')]
+        [Alias('LogLocation')]
+        [string]$Path=$Local:Path,
+        
         [Parameter(Mandatory=$false)]
         [ValidateSet("Success","Error","Warn","Info")]
         [string]$Level="Info",
+        
         [switch]$UseLocal
     )
     if((!$UseLocal) -and $Level -ne "Success"){
-        #write-host "Path: $Path"
-        #write-host "Message: $Message"
-        #write-host "Level: $Level"
-        Write-Log -LogPath "$Path" -LogContent $Message -Level $Level;
+        Write-Log -Path "$Path" -Message $Message -Level $Level;
     } else {
         $ColorMap = @{"Success"="Green";"Error"="Red";"Warn"="Yellow"};
         $FontColor = "White";
         If($ColorMap.ContainsKey($Level)){
             $FontColor = $ColorMap[$Level];
         }
-        $DateNow = (Date).ToString("yyyy-mm-dd hh:mm:ss");
+        $DateNow = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        #$DateNow = (Date).ToString("yyyy-mm-dd hh:mm:ss");
         Add-Content -Path $Path -Value ("$DateNow     ($Level)     $Message")
         Write-Host "$MethodName::$Level`t$Message" -ForegroundColor $FontColor;
     }
@@ -525,12 +645,15 @@ function Write-2Report{
     Param
     (
         [string]$Message,
-        [string]$Path,
+
+        [Alias('LogPath')]
+        [Alias('LogLocation')]
+        [string]$Path=$Local:Path,
+        
         [Parameter(Mandatory=$false)]
         [ValidateSet("Title","Header","Body","Footer")]
-        [string]$Level="Body",
-        [Parameter(Mandatory=$false)]
-        [string]$delimiter
+        [string]$Level="Body"
+        
     )
     
     $ColorMap = @{"Title"="Cyan";"Header"="Yellow";"Footer"="Yellow"};
@@ -551,7 +674,6 @@ function Write-2Report{
     }
 
     Add-Content -Path $Path -Value ("$Message")
-    #https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_special_characters?view=powershell-7.1
     Write-Host "$Message" -ForegroundColor $FontColor;
     
 }

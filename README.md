@@ -1,2 +1,2 @@
 # WS1API
- Powershell module for common Airwatch / Workspace ONE UEM calls
+ A collection of useful functions for interacting with VMware Workspace ONE UEM RestAPI
