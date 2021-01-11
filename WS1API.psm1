@@ -1,17 +1,22 @@
 ﻿<#
  .Synopsis
-  A collection of useful functions for interacting with VMware Workspace ONE UEM RestAPI
-
+    A collection of useful functions for interacting with VMware Workspace ONE UEM RestAPI
+ .NOTES
+    Created:   	    December, 2020
+    Created by:	    Phil Helmling, @philhelmling
+    Organization:   VMware, Inc.
+    Filename:       WS1API.psm1
+    GitHub:         https://github.com/helmlingp/WS1API 
  .Description
-  The following functions are currently provided:
-  - Get-OG, (requires Write-Log2, Invoke-AWApiCommand)
-  - Invoke-AWApiCommand, (requires Write-Log2)
-  - Get-CurrentLoggedonUser, (requires GetWin32User.cs in the smae folder)
-  - Get-UserSIDLookup, (requires Get-CurrentLoggedonUser)
-  - Get-ReverseSID, 
-  - Write-Log, 
-  - Write-Log2, (requires Write-Log)
-  - Write-2Report.
+    The following functions are currently provided:
+    - Get-OG, (requires Write-Log2, Invoke-AWApiCommand)
+    - Invoke-AWApiCommand, (requires Write-Log2)
+    - Get-CurrentLoggedonUser, (requires GetWin32User.cs in the smae folder)
+    - Get-UserSIDLookup, (requires Get-CurrentLoggedonUser)
+    - Get-ReverseSID, 
+    - Write-Log, 
+    - Write-Log2, (requires Write-Log)
+    - Write-2Report.
 
  .Example
    # Get OG from provided name
@@ -351,7 +356,7 @@
     } 
     return "Unenrolled";
 } #>
-
+$current_path = $PSScriptRoot;
 function Get-OG{
     param([string]$WSOServer, [string]$cred, [string]$apikey, [string]$OrgGroup, [bool]$Debug=$false)
     $og_search_endpoint = "$WSOServer/API/system/groups/search?name=$OrgGroup";
@@ -365,6 +370,7 @@ function Get-OG{
     }
     return $OG_Search;
 }
+
 function Invoke-AWApiCommand{
     param([string]$Endpoint, [string]$Method="GET", [int]$ApiVersion=1, $Data, [string]$Auth, [string]$Apikey, [bool]$Debug=$false)
 
@@ -418,11 +424,11 @@ function Invoke-AWApiCommand{
 
 function Get-CurrentLoggedonUser{
     param([bool]$ReturnObj=$false)
-    If(Test-Path "$shared_path\GetWin32User.cs"){
-        Unblock-File "$shared_path\GetWin32User.cs"
+    If(Test-Path "$current_path\GetWin32User.cs"){
+        Unblock-File "$current_path\GetWin32User.cs"
         if (-not ([Management.Automation.PSTypeName]'AWDeviceInventory.QueryUser').Type) {
                     [string[]]$ReferencedAssemblies = 'System.Drawing', 'System.Windows.Forms', 'System.DirectoryServices'
-                    Add-Type -Path "$shared_path\GetWin32User.cs" -ReferencedAssemblies $ReferencedAssemblies -IgnoreWarnings -ErrorAction 'Stop'
+                    Add-Type -Path "$current_path\GetWin32User.cs" -ReferencedAssemblies $ReferencedAssemblies -IgnoreWarnings -ErrorAction 'Stop'
         }
     } Else{
         $usernameLookup = Get-WMIObject -class Win32_ComputerSystem | Select-Object username;
