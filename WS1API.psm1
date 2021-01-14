@@ -106,6 +106,8 @@
 
    ************************************************************************
    #>
+$current_path = $PSScriptRoot;
+
 <# function Get-AWAPIConfiguration{
     if(Test-Path "$current_path\api-debug.config"){
         $useDebugConfig = $true;
@@ -309,12 +311,7 @@
     return $WebRequest;
 } #>
 
-<# function Get-NewDeviceId{
-    $Private:api_settings_obj = Get-AWAPIConfiguration;
-
-    $Server = $Private:api_settings_obj.ApiConfig.Server;
-    $Global:OrganizationGroupId = $Private:api_settings_obj.ApiConfig.OrganizationGroupId;
-    $Global:deviceid = $Private:api_settings_obj.ApiConfig.DeviceId;
+function Get-NewDeviceId{
 
     #$serialSearch = wmic bios get serialnumber;
     $serialSearch = get-ciminstance win32_bios | format-list serialnumber
@@ -324,39 +321,18 @@
     $serialEncoded = [System.Web.HttpUtility]::UrlEncode($serialnumber);
     $deviceSearchEndpoint = "api/mdm/devices?searchBy=Serialnumber&id=$serialEncoded";
 
-    If($Private:api_settings_obj.ApiConfig.SSLThumbprint){      
-        $WebResponse = Invoke-SecureWebRequest -Endpoint $deviceSearchEndpoint -Method $Method -ApiVersion 1 -Data $Data -Debug $Debug
-    } Else{
-        $WebResponse = Invoke-PrivateWebRequest -Endpoint $deviceSearchEndpoint -Method $Method -ApiVersion 1 -Data $Data -Debug $Debug
-    }
-
-    If($WebResponse.StatusCode -lt 300){
-        If($WebResponse.Content){
-            $device_json = ConvertFrom-Json($WebResponse.Content); 
-        }
-    }
+    $WebResponse = Invoke-AWApiCommand -Endpoint $deviceSearchEndpoint -Method $Method -ApiVersion 1 -Data $Data -Debug $Debug
 
     If($device_json.Id){
         $deviceid = $device_json.Id.Value;
         If ($device_json.EnrollmentStatus -ne "Enrolled"){
             return "Unenrolled";
         }
-        $Private:api_settings_obj.ApiConfig.DeviceId = $device_json.Id.Value;
-        #Save the Device id
-        $apicontent = ConvertTo-Json $Private:api_settings_obj -Depth 10;
-        If(!$useDebugConfig){
-            $apiencryptedcontent = ConvertTo-EncryptedFile -FileContents $apicontent
-            Set-Content "$current_path\api.config" -Value $apiencryptedcontent
-        } Else {
-            Set-Content "$current_path\api-debug.config" -Value $apicontent
-        }
-        $Global:deviceid = $device_json.Id;
-       
         return $deviceid;
     } 
     return "Unenrolled";
-} #>
-$current_path = $PSScriptRoot;
+}
+
 function Get-OG{
     param([string]$WSOServer, [string]$cred, [string]$apikey, [string]$OrgGroup, [bool]$Debug=$false)
     $og_search_endpoint = "$WSOServer/API/system/groups/search?name=$OrgGroup";
