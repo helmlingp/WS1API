@@ -20,7 +20,7 @@
 
  .Example
    # Get OG from provided name
-   $OGSearch = Get-OG -WSOServer $script:WSOServer -Cred $script:cred -ApiKey $script:ApiKey -OrgGroup $script:OrgGroup -Debug $Debug
+   $OGSearch = Get-OG -Server $script:Server -Cred $script:cred -ApiKey $script:ApiKey -OrgGroup $script:OrgGroup -Debug $Debug
    $script:groupuuid = $OGSearch.OrganizationGroups[0].Uuid;
 
  .Example
@@ -334,8 +334,8 @@ function Get-NewDeviceId{
 }
 
 function Get-OG{
-    param([string]$WSOServer, [string]$cred, [string]$apikey, [string]$OrgGroup, [bool]$Debug=$false)
-    $og_search_endpoint = "$WSOServer/API/system/groups/search?name=$OrgGroup";
+    param([string]$Server, [string]$cred, [string]$apikey, [string]$OrgGroup, [bool]$Debug=$false)
+    $og_search_endpoint = "$Server/API/system/groups/search?name=$OrgGroup";
     $OG_Search = Invoke-AWApiCommand -Method Get -Endpoint $og_search_endpoint -ApiVersion 2 -Auth $cred -Apikey $apikey -Debug $Debug
     If($OG_Search.OrganizationGroups){
         if($Debug){
