@@ -633,25 +633,29 @@ function Write-2Report{
         [string]$Path=$Local:Path,
         
         [Parameter(Mandatory=$false)]
-        [ValidateSet("Title","Header","Body","Footer")]
+        [ValidateSet("Title","Header","Body","Footer","Error")]
         [string]$Level="Body"
         
     )
     
-    $ColorMap = @{"Title"="Cyan";"Header"="Yellow";"Footer"="Yellow"};
+    $ColorMap = @{"Title"="Cyan";"Header"="Yellow";"Footer"="Yellow";"Error"="Red"};
     $FontColor = "White";
     If($ColorMap.ContainsKey($Level)){
         $FontColor = $ColorMap[$Level];
     }
+    if($Level -eq "Error"){
+        $Errormsg = @("************************************************************************`n`n`t$Message`n`n************************************************************************`n");
+        $Message = $Errormsg
+    }
 
     if($Level -eq "Title"){
         $DateNow = Get-Date -Format f;
-        $Title = @("************************************************************************`n`n`t $Message`n`n`t $DateNow`n`n************************************************************************`n");
+        $Title = @("************************************************************************`n`n`t$Message`n`n`t$DateNow`n`n************************************************************************`n");
         $Message = $Title
     }
 
     if($Level -eq "Footer"){
-        $Footer = @("************************************************************************`n`n`t $Message`n`n************************************************************************`n");
+        $Footer = @("************************************************************************`n`n`t$Message`n`n************************************************************************`n");
         $Message = $Footer
     }
 
