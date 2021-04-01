@@ -336,6 +336,7 @@ function Get-NewDeviceId{
 function Get-OG{
     param([string]$Server, [string]$cred, [string]$apikey, [string]$OrgGroup, [bool]$Debug=$false)
     $og_search_endpoint = "$Server/API/system/groups/search?name=$OrgGroup";
+
     $OG_Search = Invoke-AWApiCommand -Method Get -Endpoint $og_search_endpoint -ApiVersion 2 -Auth $cred -Apikey $apikey -Debug $Debug
     If($OG_Search.OrganizationGroups){
         if($Debug){
@@ -361,7 +362,7 @@ function Invoke-AWApiCommand{
             $WebRequest = Invoke-WebRequest -Uri ("$Endpoint") -Method $Method -Body $Data -UseBasicParsing -Headers @{'aw-tenant-code' = $ApiKey;'Authorization' = $Auth;'accept' = "application/json;version=$ApiVersion";'Content-Type' = 'application/json'};
         } else {
             #$WebRequest = Invoke-RestMethod -Uri "$Endpoint" -Method $Method -Headers @{'aw-tenant-code' = $ApiKey;'Authorization' = $Auth;'accept' = 'application/json';'Content-Type' = 'application/json'};
-            $WebRequest = Invoke-WebRequest -Uri ("$Endpoint") -Method $Method -UseBasicParsing -Headers @{'aw-tenant-code' = $ApiKey;'Authorization' = $Auth;'accept' = "application/json;version=$ApiVersion";'Content-Type' = 'application/json'};
+            $WebRequest = Invoke-WebRequest -Uri ($Endpoint) -Method $Method -UseBasicParsing -Headers @{'aw-tenant-code' = $ApiKey;'Authorization' = $Auth;'accept' = "application/json;version=$ApiVersion";'Content-Type' = "application/json"};
         }
         
     } Catch{
