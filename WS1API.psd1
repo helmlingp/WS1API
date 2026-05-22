@@ -82,7 +82,7 @@
     PrivateData       = @{
         PSData = @{
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags       = @('Workspace-ONE', 'WS1', 'RestAPI', 'API', 'OAuth', 'Authentication', 'UEM', 'Enterprise-Mobility', 'Management', 'Device-Management', 'Application-Management', 'Baseline-Management', 'Agent-Management', 'User-Management', 'Enrollment', 'Utilities', 'MDM', 'Mobile Device-Management')
+            Tags       = @('Workspace-ONE', 'WS1', 'RestAPI', 'API', 'OAuth', 'Authentication', 'UEM', 'Enterprise-Mobility', 'Management', 'Device-Management', 'Application-Management', 'Baseline-Management', 'Agent-Management', 'User-Management', 'Enrollment', 'Utilities', 'MDM', 'Mobile-Device-Management')
 
             # A URL to the license for this module.
             LicenseUri = 'https://github.com/helmlingp/WS1API/blob/main/LICENSE'
