@@ -2,8 +2,8 @@
 
 A comprehensive PowerShell module for interacting with Omnissa Workspace ONE UEM RestAPI. Features OAuth 2.0 authentication with multi-datacenter support, complete device management operations, application distribution, user management, and advanced logging capabilities.
 
-**Module Version:** 1.0.0  
-**Functions Exported:** 57  
+**Module Version:** 1.1.0  
+**Functions Exported:** 58  
 **PowerShell Version Required:** 5.0+
 
 ## Installation
@@ -81,14 +81,15 @@ Get-Command -Module WS1API
 | **Clear-UemDevicePasscode** | Bulk clear device passcodes with confirmation |
 | **Invoke-UemSmartGroupCommand** | Execute commands on smart group devices |
 
-### Applications (6 functions)
+### Applications (7 functions)
 
 | Function | Description |
 |----------|-------------|
-| **Get-App** | Query installed applications from registry |
+| **Get-App** | Search or list UEM applications by name, group, and/or platform, with automatic pagination |
 | **New-UemAppIcon** | Upload app icons with BlobId return |
 | **New-UemApplication** | Create internal apps with platform validation (BundleId mandatory) |
-| **Get-UemApplications** | Query apps by platform (iOS, Android, macOS, WinRT, ChromeOS) |
+| **Invoke-DownloadUemAppBlob** | Download internal app icon/package blob by UUID or application ID |
+| **Invoke-DownloadUemApp** | Find an app by name (prompting on multiple matches) and download its blob |
 | **Invoke-ChunkandUpload** | Handle large file uploads with chunking |
 | **Invoke-UploadfromLink** | Upload application from external URL |
 

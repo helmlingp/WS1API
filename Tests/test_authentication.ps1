@@ -95,13 +95,13 @@ catch {
     Write-Host "✗ Test failed: $_" -ForegroundColor Red
 }
 
-# Test 4: Helper function - New-BasicAuthCredential
-Write-Host "`n--- Test 4: New-BasicAuthCredential Helper ---" -ForegroundColor Magenta
+# Test 4: Helper function - Get-BasicAuthCredential
+Write-Host "`n--- Test 4: Get-BasicAuthCredential Helper ---" -ForegroundColor Magenta
 try {
     # This function is internal, but we should be able to call it if exported
-    $cred = New-BasicAuthCredential -Username "admin" -PlainPassword "password123"
+    $cred = Get-BasicAuthCredential -Username "admin" -PlainPassword "password123"
     
-    Write-Host "✓ New-BasicAuthCredential executed" -ForegroundColor Green
+    Write-Host "✓ Get-BasicAuthCredential executed" -ForegroundColor Green
     Write-Host "  Credential: $($cred.Substring(0, 20))..." -ForegroundColor Cyan
     
     if ($cred.StartsWith("Basic ")) {
@@ -109,7 +109,7 @@ try {
     }
 }
 catch {
-    Write-Host "⚠ New-BasicAuthCredential not exported (expected for internal helper)" -ForegroundColor Yellow
+    Write-Host "⚠ Get-BasicAuthCredential not exported (expected for internal helper)" -ForegroundColor Yellow
 }
 
 # Test 5: Get-WSONEOAuthToken with TokenUrl parameter
@@ -136,5 +136,5 @@ Write-Host "✓ Get-ServerAuth supports Basic authentication"
 Write-Host "✓ Get-ServerAuth supports OAuth2 authentication"  
 Write-Host "✓ Get-ServerAuth supports auto-detection"
 Write-Host "✓ Get-WSONEOAuthToken enhanced with TokenUrl parameter"
-Write-Host "✓ New-BasicAuthCredential helper function available"
+Write-Host "✓ Get-BasicAuthCredential helper function available"
 Write-Host "`nModule integration tests complete!" -ForegroundColor Green

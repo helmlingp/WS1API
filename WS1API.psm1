@@ -8,7 +8,7 @@
     Filename:       WS1API.psm1
     GitHub:         https://github.com/helmlingp/WS1API 
  .Description
-    A comprehensive module providing 57 functions for authenticating with and interacting with
+    A comprehensive module providing 58 functions for authenticating with and interacting with
     Workspace ONE UEM via RestAPI. Supports multiple data center locations and includes OAuth
     token management, device management, application distribution, user management, and logging.
     
@@ -44,11 +44,12 @@
     - Clear-UemDevicePasscode - Bulk clear device passcodes with confirmation
     - Invoke-UemSmartGroupCommand - Execute commands on smart group devices
 
-    APPLICATIONS (6 functions):
-    - Get-App - Query installed applications from registry
+    APPLICATIONS (7 functions):
+    - Get-App - Search or list UEM applications by name, group, and/or platform, with automatic pagination
     - New-UemAppIcon - Upload app icons with BlobId return
     - New-UemApplication - Create internal apps with platform validation (BundleId mandatory)
-    - Get-UemApplications - Query apps by platform (iOS, Android, macOS, WinRT, ChromeOS)
+    - Invoke-DownloadUemAppBlob - Download internal app icon/package blob using blob UUID
+    - Invoke-DownloadUemApp - Find an app by name (prompting on multiple matches) and download its blob
     - Invoke-ChunkandUpload - Handle large file uploads with chunking
     - Invoke-UploadfromLink - Upload application from external URL
     
@@ -82,7 +83,7 @@
     - Get-RegistryValue - Query Windows registry values
     - Get-Log - Retrieve and parse log files
     - Invoke-CreateTask - Create scheduled task for automation
-    - Show-Toast - Display Windows toast notification to user
+    - Show-Toast - Display Windows toast notification to user (persistent by default, or auto-dismiss via -Timeout)
     - New-Tag - Create new tag in organization group
     
     LOGGING & REPORTING (2 functions):
@@ -379,10 +380,10 @@ function Get-ServerAuth {
         
         # Convert SecureString if provided
         if ($Password -is [System.Security.SecureString]) {
-            $Password = New-BasicAuthCredential -Username $Username -SecurePassword $Password -ReturnPlainPassword
+            $Password = Get-BasicAuthCredential -Username $Username -SecurePassword $Password -ReturnPlainPassword
         }
         
-        $credential = New-BasicAuthCredential -Username $Username -PlainPassword $Password
+        $credential = Get-BasicAuthCredential -Username $Username -PlainPassword $Password
     } else {
         if ([string]::IsNullOrEmpty($Server))       { $Server       = Read-Host -Prompt 'Enter the Workspace ONE UEM Server Name' }
         if ([string]::IsNullOrEmpty($ClientId))     { $ClientId     = Read-Host -Prompt 'Enter the OAuth Client ID' }
@@ -508,7 +509,7 @@ function Get-WSONEOAuthToken {
 
 }
 
-function New-BasicAuthCredential {
+function Get-BasicAuthCredential {
     <#
     .SYNOPSIS
     Creates a Basic authentication credential header.
@@ -531,12 +532,12 @@ function New-BasicAuthCredential {
     instead of the Basic auth header. Used internally for password conversion.
     
     .EXAMPLE
-    $basicAuth = New-BasicAuthCredential -Username "admin" -PlainPassword "password123"
+    $basicAuth = Get-BasicAuthCredential -Username "admin" -PlainPassword "password123"
     # Returns: "Basic YWRtaW46cGFzc3dvcmQxMjM="
     
     .EXAMPLE
     $securePass = Read-Host -Prompt "Enter password" -AsSecureString
-    $basicAuth = New-BasicAuthCredential -Username "admin" -SecurePassword $securePass
+    $basicAuth = Get-BasicAuthCredential -Username "admin" -SecurePassword $securePass
     
     .OUTPUTS
     String - Basic auth header in format "Basic <base64-encoded-credentials>"
@@ -1830,62 +1831,119 @@ function Write-2Report {
 function Show-Toast {
     <#
     .SYNOPSIS
-    Displays a toast notification.
-    
+        Displays a Windows toast notification, persistent by default.
+
     .DESCRIPTION
-    This function displays a toast notification with a specified title and message.
-    
+        Uses the Windows Runtime (WinRT) notification APIs to show a toast notification.
+        By default the toast uses the "reminder" scenario, which keeps it on screen until
+        the user dismisses it, rather than disappearing automatically. Optionally displays
+        an icon/image alongside the message.
+
+        If -AppId is not supplied, the function looks for the Workspace ONE Intelligent
+        Hub app and uses its AppID so the toast is attributed to Intelligent Hub;
+        otherwise it falls back to a PowerShell AppID.
+
+        Requires Windows 10/11.
+
     .PARAMETER Title
-    The title of the toast notification.
-    
+        The bold header text shown at the top of the toast notification.
+
     .PARAMETER Message
-    The message of the toast notification.
-    
+        The body text shown below the title.
+
     .PARAMETER AppId
-    The AppId of the application displaying the toast notification. Default is PowerShell.
-    
+        The Application User Model ID (AUMID) the toast notification is shown under.
+        Defaults to the `Workspace ONE Intelligent Hub` AppID if installed, otherwise
+        to a PowerShell AppID.
+
+    .PARAMETER ImageSrc
+        Optional path to an image file to display in the toast below the Message. Tested with PNG.
+
+    .PARAMETER Timeout
+        Optional. Windows only supports two native durations for a toast: "Short" (~5 seconds)
+        and "Long" (~25 seconds) - exact seconds cannot be specified. Windows ignores the
+        duration attribute entirely on "reminder" scenario toasts, so specifying -Timeout
+        switches the toast to the "default" scenario (native OS auto-dismiss) instead of
+        "reminder" (persistent until user dismisses it). Omit -Timeout to keep the toast
+        persistent.
+
     .OUTPUTS
-    None
+        None
+
+    .EXAMPLE
+        Show-Toast -Title "Reboot Required" -Message "Please save your work and restart your device."
+
+    .EXAMPLE
+        Show-Toast -Title "A popup notification" -Message "This is a message to tell the user to do something prior to doing something" -ImageSrc "C:\Program Files (x86)\Airwatch\AgentUI\Resources\hub_logo.png"
+
+    .EXAMPLE
+        Show-Toast -Title "Heads Up" -Message "This will auto-dismiss." -Timeout Short
     #>
 
     param(
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory)]
         [string]$Title,
-        [Parameter(Mandatory = $false)]
+
+        [Parameter(Mandatory)]
         [string]$Message,
-        [Parameter(Mandatory = $false)]
-        [string]$AppId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
+
+        [string]$AppId,
+
+        [string]$ImageSrc,
+
+        [ValidateSet('Short', 'Long')]
+        [string]$Timeout
     )
 
     try {
-        #Ensure-ToastAppId -AppId $AppId
-        #$appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
-        $WorkspaceOne = Get-StartApps | Where-Object Name -Like "Workspace ONE Intelligent Hub" | Select-Object Name, AppId
-        if (($WorkspaceOne | Measure-Object).Count -gt 0) {
-            $AppId = $WorkspaceOne.AppId
+        # Provide default values
+        if (-not $PSBoundParameters.ContainsKey('AppId')) {
+            $hubApp = Get-StartApps | Where-Object { $_.Name -like "*Workspace ONE Intelligent Hub*" } | Select-Object -First 1
+            $AppId = if ($hubApp) { $hubApp.AppID } else { "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe" }
         }
-        $null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
-        $null = [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime]
-        $xml = @"
-<toast duration="long" scenario="reminder">
+
+        # Force PowerShell to load the WinRT types (bare [Type] syntax can't resolve WinMD types on its own)
+        [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+        [Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+        [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime] | Out-Null
+
+        if (-not ([Windows.UI.Notifications.ToastNotificationManager] -is [type])) {
+            throw "WinRT namespaces not available. Requires Windows 10/11."
+        }
+
+        $toastAttributes = if ($PSBoundParameters.ContainsKey('Timeout')) {
+            "duration=`"$($Timeout.ToLower())`""
+        } else {
+            'scenario="reminder"'
+        }
+
+        $imageXml = ''
+        if ($PSBoundParameters.ContainsKey('ImageSrc')) {
+            $image = (Get-Item -Path $ImageSrc).FullName
+            $imageXml = "<image src=`"$image`" alt=`"AppIcon`"/>"
+        }
+
+        # Use ::new() for WinRT types, NOT New-Object
+        $xmlDoc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+        $xmlDoc.LoadXml(@"
+<toast $toastAttributes>
   <visual>
     <binding template="ToastGeneric">
       <text>$Title</text>
       <text>$Message</text>
+      $imageXml
     </binding>
   </visual>
+  <actions>
+    <action content="Dismiss" arguments="dismiss" activationType="background"/>
+  </actions>
 </toast>
-"@
+"@)
 
-        $doc = New-Object Windows.Data.Xml.Dom.XmlDocument
-        $doc.LoadXml($xml)
-        $toast = New-Object Windows.UI.Notifications.ToastNotification $doc
-        $toast.ExpirationTime = (Get-Date).AddMinutes(1)
-        $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($AppId)
-        $notifier.Show($toast)
+        $toaster = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($AppId)
+        $toaster.Show($xmlDoc) | Out-Null
     }
     catch {
-        # Ignore toast errors
         Write-Error "Failed to show toast notification: $($_.Exception.Message)"
     }
 }
@@ -3582,79 +3640,131 @@ function Invoke-CreateTask {
 function Get-App {
     <#
     .SYNOPSIS
-    Searches for existing applications in Workspace ONE UEM by name and organization group.
-    
+    Searches for, or lists, applications in Workspace ONE UEM, with automatic pagination.
+
     .DESCRIPTION
-    Queries the WS1 UEM MAM API to find applications by name within a specific organization group.
-    Returns matching application objects including bundle ID, version, and file name for version management.
-    Useful for checking if app versions already exist before uploading.
-    
+    Queries the /API/mam/apps/search endpoint to find applications, optionally scoped by
+    name, organization group, and/or platform. When -AppName is omitted, returns every
+    matching application instead of a single one - paging through the API automatically
+    (a page is only assumed to be the last one once it returns fewer than -PageSize records,
+    so results are complete regardless of how many applications exist).
+    Returns matching application objects including bundle ID, version, and file name -
+    useful for checking if app versions already exist before uploading, or for enumerating
+    a group's/platform's catalog.
+
     .PARAMETER Server
     The WS1 UEM server hostname or FQDN (e.g., uem.example.com).
-    
+
     .PARAMETER Auth
     Authorization credential (Basic or Bearer token).
-    
+
     .PARAMETER ApiKey
     The API key (aw-tenant-code).
-    
+
     .PARAMETER AppName
-    Name of the application to search for.
-    
+    Optional name of the application to search for. Omit to list all applications matching
+    the other filters.
+
     .PARAMETER GroupId
-    The organization group ID to search within.
-    
+    Optional organization group ID to scope the search to.
+
     .PARAMETER Platform
-    Optional platform filter (e.g., WinRT, Android, iOS). Searches all if not specified.
-    
+    Optional platform filter: iOS, Android, macOS, WinRT, ChromeOS, or Any (default; no filter).
+
+    .PARAMETER PageSize
+    Number of records requested per page while paginating. Default is 500 (max: 500).
+
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
     $apps = Get-App -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -AppName "7-Zip" -GroupId 15
     if ($apps) { Write-Host "Found $($apps.Count) matching apps" }
-    
+
+    .EXAMPLE
+    # List every WinRT application in the group
+    $winApps = Get-App -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -GroupId 15 -Platform WinRT
+    $winApps | Select-Object ApplicationName, ApplicationVersion | Format-Table
+
     .OUTPUTS
-    PSCustomObject array with ApplicationName, AppVersion, BundleId, ApplicationFileName properties, or $null if not found
+    PSCustomObject array with ApplicationName, ApplicationVersion, BundleId, ApplicationFileName properties, or $null if not found
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]$Server,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$Auth,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$ApiKey,
-        
-        [Parameter(Mandatory = $true)]
-        [string]$AppName,
-        
-        [Parameter(Mandatory = $true)]
-        [int]$GroupId,
-        
+
         [Parameter(Mandatory = $false)]
-        [string]$Platform
+        [string]$AppName,
+
+        [Parameter(Mandatory = $false)]
+        [int]$GroupId,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('iOS', 'Android', 'macOS', 'WinRT', 'ChromeOS', 'Any')]
+        [string]$Platform,
+
+        [Parameter(Mandatory = $false)]
+        [int]$PageSize = 500
     )
-    
+
     try {
-        Write-Log -Message "Searching for application: $AppName in group $GroupId" -Level "Info"
-        
-        $url = "$Server/API/mam/apps/search?applicationname=$AppName&locationgroupid=$GroupId"
-        if (-not [string]::IsNullOrEmpty($Platform)) {
-            $url += "&platform=$Platform"
+        $apiPlatform = if ($Platform -and $Platform -ne 'Any') { $Platform } else { '' }
+
+        $descriptionParts = @()
+        if (-not [string]::IsNullOrEmpty($AppName)) { $descriptionParts += "name '$AppName'" }
+        if ($GroupId) { $descriptionParts += "group $GroupId" }
+        if ($apiPlatform) { $descriptionParts += "platform $apiPlatform" }
+        $queryDescription = if ($descriptionParts.Count -gt 0) { $descriptionParts -join ', ' } else { 'all applications' }
+
+        Write-Log -Message "Querying applications ($queryDescription)" -Level "Info"
+
+        # Recursive pagination function (defined inline). A page is treated as the last one
+        # once it returns fewer than PageSize records - this endpoint's response does not
+        # reliably expose a trustworthy total count, so this is more robust than an assumption.
+        function QueryAppsRecursive {
+            param (
+                [int]$Page,
+                [array]$Records
+            )
+
+            $endpoint = "$Server/API/mam/apps/search?page=$Page&pagesize=$PageSize"
+            if (-not [string]::IsNullOrEmpty($AppName)) { $endpoint += "&applicationname=$AppName" }
+            if ($GroupId) { $endpoint += "&locationgroupid=$GroupId" }
+            if ($apiPlatform) { $endpoint += "&platform=$apiPlatform" }
+
+            $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
+
+            if ($response -and $response.Application) {
+                $pageCount = @($response.Application).Count
+                $Records = $Records + $response.Application
+
+                if ($pageCount -lt $PageSize) {
+                    return $Records
+                } else {
+                    Write-Log -Message "Page $Page complete ($pageCount records). Continuing to next page..." -Level "Info"
+                    return QueryAppsRecursive -Page ($Page + 1) -Records $Records
+                }
+            } else {
+                return $Records
+            }
         }
-        
-        $response = Invoke-AWApiCommand -Endpoint $url -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
-        
-        if ($response -and $response.Application) {
-            Write-Log -Message "Found $($response.Application.Count) application(s) matching '$AppName'" -Level "Success"
-            return $response.Application
+
+        $allApps = QueryAppsRecursive -Page 0 -Records @()
+
+        if ($allApps.Count -gt 0) {
+            Write-Log -Message "Found $($allApps.Count) application(s) for $queryDescription" -Level "Success"
+            return $allApps
         } else {
-            Write-Log -Message "No applications found matching '$AppName'" -Level "Info"
+            Write-Log -Message "No applications found for $queryDescription" -Level "Info"
             return $null
         }
     } catch {
-        Write-Log -Message "Error searching for application: $($_.Exception.Message)" -Level "Error"
+        Write-Log -Message "Error retrieving applications: $($_.Exception.Message)" -Level "Error"
         return $null
     }
 }
@@ -5078,14 +5188,21 @@ function New-UemAppIcon {
     }
 }
 
-function Get-UemApplications {
+function Invoke-DownloadUemAppBlob {
     <#
     .SYNOPSIS
-    Retrieves applications available in Workspace ONE UEM by platform.
+    Downloads an internal application blob (package or icon) using the blob UUID API.
     
     .DESCRIPTION
-    Queries the /api/mam/apps/search endpoint to retrieve applications filtered by platform.
-    Returns list of available applications with details for app management and distribution.
+    Supports the new blob UUID workflow for internal applications:
+    1) Resolve blob UUID from /api/mam/apps/internal/{applicationId}
+    2) Download blob content from /api/mam/blobs/downloadblob/{uuid}
+
+    You can provide either:
+    - ApplicationId with BlobType (default: ApplicationFileBlobGUID), or
+    - BlobUuid directly.
+
+    Works with both Basic and OAuth Bearer authentication.
     
     .PARAMETER Server
     The WS1 UEM server hostname or FQDN.
@@ -5096,69 +5213,252 @@ function Get-UemApplications {
     .PARAMETER ApiKey
     The API key (aw-tenant-code).
     
-    .PARAMETER Platform
-    Target platform to search: iOS, Android, macOS, WinRT (Windows), ChromeOS, Any (all platforms).
-    
-    .PARAMETER MaxResults
-    Maximum number of applications to return. Default is 500.
+    .PARAMETER OutputPath
+    Destination file path for the downloaded blob content.
+
+    .PARAMETER ApplicationId
+    Internal application ID used to resolve blob UUID values.
+
+    .PARAMETER BlobType
+    Blob UUID property to resolve from the internal app details.
+    Default is ApplicationFileBlobGUID.
+
+    .PARAMETER BlobUuid
+    Blob UUID to download directly without resolving from application details.
+
+    .PARAMETER PassThru
+    If specified, returns a FileInfo object for the downloaded file.
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $winApps = Get-UemApplications -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Platform WinRT
-    $winApps | Select-Object ApplicationName, ApplicationVersion | Format-Table
-    
+    $winApps = Get-App -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Platform WinRT
+    Invoke-DownloadUemAppBlob -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+        -ApplicationId 1234 -BlobType ApplicationFileBlobGUID -OutputPath "C:\Temp\MyApp.msi"
+
     .EXAMPLE
-    # Get all iOS apps
-    $iosApps = Get-UemApplications -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Platform iOS
+    # Download directly by known UUID
+    Invoke-DownloadUemAppBlob -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+        -BlobUuid "57e366cf-9555-4d31-b387-cc7ae7feb149" -OutputPath "C:\Temp\blob.bin" -PassThru
     
     .OUTPUTS
-    PSCustomObject array with ApplicationName, ApplicationVersion, BundleId, ApplicationFileName, and other app details
+    String (output path) by default, or System.IO.FileInfo when -PassThru is used
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'ByApplicationId')]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Server,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Auth,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ApiKey,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OutputPath,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ByApplicationId')]
+        [int]$ApplicationId,
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'ByApplicationId')]
+        [ValidateSet('ApplicationFileBlobGUID', 'LargeIconBlobGUID', 'MediumIconBlobGUID', 'SmallIconBlobGUID')]
+        [string]$BlobType = 'ApplicationFileBlobGUID',
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ByBlobUuid')]
+        [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$')]
+        [string]$BlobUuid,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
+    )
+
+    try {
+        $resolvedBlobUuid = $BlobUuid
+
+        if ($PSCmdlet.ParameterSetName -eq 'ByApplicationId') {
+            Write-Log -Message "Resolving $BlobType for internal application ID: $ApplicationId" -Level "Info"
+
+            $appEndpoint = "$Server/api/mam/apps/internal/$ApplicationId"
+            $appDetails = Invoke-AWApiCommand -Endpoint $appEndpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
+
+            if (-not $appDetails) {
+                Write-Log -Message "No application details returned for application ID: $ApplicationId" -Level "Error"
+                return $null
+            }
+
+            $resolvedBlobUuid = $appDetails.$BlobType
+            if (-not $resolvedBlobUuid) {
+                $blobProperty = $appDetails.PSObject.Properties | Where-Object { $_.Name -ieq $BlobType } | Select-Object -First 1
+                if ($blobProperty) {
+                    $resolvedBlobUuid = $blobProperty.Value
+                }
+            }
+
+            if (-not $resolvedBlobUuid) {
+                Write-Log -Message "Blob UUID field '$BlobType' was not present or empty for application ID: $ApplicationId" -Level "Error"
+                return $null
+            }
+        }
+
+        Write-Log -Message "Downloading blob UUID: $resolvedBlobUuid" -Level "Info"
+
+        $outputDirectory = Split-Path -Path $OutputPath -Parent
+        if ($outputDirectory -and -not (Test-Path -Path $outputDirectory)) {
+            New-Item -Path $outputDirectory -ItemType Directory -Force | Out-Null
+        }
+
+        $downloadEndpoint = "$Server/api/mam/blobs/downloadblob/$resolvedBlobUuid"
+        $headers = @{
+            'aw-tenant-code' = $ApiKey
+            'Authorization'  = $Auth
+            'accept'         = 'application/octet-stream;version=1'
+        }
+
+        $response = Invoke-WebRequest -Uri $downloadEndpoint -Method GET -Headers $headers -UseBasicParsing -OutFile $OutputPath -ErrorAction Stop
+
+        if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
+            Write-Log -Message "Blob downloaded successfully to: $OutputPath" -Level "Success"
+            if ($PassThru) {
+                return (Get-Item -Path $OutputPath)
+            }
+            return $OutputPath
+        }
+
+        Write-Log -Message "Blob download returned unexpected HTTP status code: $($response.StatusCode)" -Level "Error"
+        return $null
+    } catch {
+        Write-Log -Message "Error downloading application blob: $($_.Exception.Message)" -Level "Error"
+        return $null
+    }
+}
+
+function Invoke-DownloadUemApp {
+    <#
+    .SYNOPSIS
+    Finds an internal application by name in Workspace ONE UEM and downloads its file blob.
+
+    .DESCRIPTION
+    Searches for an internal application using Get-App, optionally scoped by organization
+    group and/or platform. If multiple applications match, prompts the user to select one
+    from a numbered list (same UX as Invoke-OGSearch). Downloads the selected application's
+    file using the blob UUID workflow (see Invoke-DownloadUemAppBlob).
+
+    .PARAMETER Server
+    The WS1 UEM server hostname or FQDN (e.g., uem.example.com).
+
+    .PARAMETER Auth
+    Authorization credential (Basic or Bearer token).
+
+    .PARAMETER ApiKey
+    The API key (aw-tenant-code).
+
+    .PARAMETER AppName
+    Name of the internal application to find and download.
+
+    .PARAMETER GroupId
+    Optional organization group ID to scope the search to.
+
+    .PARAMETER Platform
+    Optional platform filter passed through to Get-App: iOS, Android, macOS, WinRT, ChromeOS, Any.
+
+    .PARAMETER OutputPath
+    Local folder path where the downloaded file will be saved. Defaults to the current directory.
+
+    .EXAMPLE
+    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
+    $og = Invoke-OGSearch -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -OrgGroup $auth.OGName
+    Invoke-DownloadUemApp -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+        -AppName "Google Chrome" -GroupId $og.GroupId -OutputPath "C:\Downloads"
+
+    .OUTPUTS
+    System.IO.FileInfo for the downloaded file, or $null if not found, cancelled, or the download failed.
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         [string]$Server,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$Auth,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$ApiKey,
-        
+
         [Parameter(Mandatory = $true)]
+        [string]$AppName,
+
+        [Parameter(Mandatory = $false)]
+        [int]$GroupId,
+
+        [Parameter(Mandatory = $false)]
         [ValidateSet('iOS', 'Android', 'macOS', 'WinRT', 'ChromeOS', 'Any')]
         [string]$Platform,
-        
+
         [Parameter(Mandatory = $false)]
-        [int]$MaxResults = 500
+        [string]$OutputPath = (Get-Location).Path
     )
-    
-    try {
-        # Map platform parameter to API format
-        $apiPlatform = $Platform
-        if ($Platform -eq 'Any') {
-            $apiPlatform = ''
+
+    Write-Log -Message "Searching for application '$AppName'..." -Level "Info"
+
+    $getAppParams = @{
+        Server  = $Server
+        Auth    = $Auth
+        ApiKey  = $ApiKey
+        AppName = $AppName
+    }
+    if ($GroupId) { $getAppParams.GroupId = $GroupId }
+    if ($Platform) { $getAppParams.Platform = $Platform }
+    $apps = Get-App @getAppParams
+
+    if ($null -eq $apps -or $apps.Count -eq 0) {
+        Write-Log -Message "No application found matching '$AppName'" -Level "Error"
+        return $null
+    }
+
+    if ($apps.Count -eq 1) {
+        $selectedApp = $apps[0]
+    } else {
+        $validChoices = 0..($apps.Count - 1)
+        $validChoices += 'Q'
+        Write-Host "`nMultiple applications found. Please select one:" -ForegroundColor Yellow
+        $choice = ''
+        while ([string]::IsNullOrEmpty($choice)) {
+            $i = 0
+            foreach ($app in $apps) {
+                Write-Host ('{0}: {1}  v{2}  [{3}]  Id={4}' -f $i, $app.ApplicationName, $app.AppVersion, $app.ApplicationFileName, $app.Id.Value)
+                $i++
+            }
+            $choice = Read-Host -Prompt 'Type the number for the application, or Q to quit'
+            if ($choice -in $validChoices) {
+                if ($choice -eq 'Q') {
+                    Write-Log -Message "User cancelled application selection" -Level "Info"
+                    return $null
+                }
+            } else {
+                [console]::Beep(1000, 300)
+                Write-Warning ('    [ {0} ] is NOT a valid selection.' -f $choice)
+                Write-Warning '    Please try again ...'
+                $choice = ''
+            }
         }
-        
-        Write-Log -Message "Retrieving applications for platform: $Platform" -Level "Info"
-        
-        # Build endpoint
-        $endpoint = "$Server/api/mam/apps/search?pagesize=$MaxResults"
-        if ($apiPlatform) {
-            $endpoint += "&platform=$apiPlatform"
-        }
-        
-        $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
-        
-        if ($response -and $response.Application) {
-            Write-Log -Message "Retrieved $($response.Application.Count) application(s)" -Level "Success"
-            return $response.Application
-        } else {
-            Write-Log -Message "No applications found for platform: $Platform" -Level "Info"
-            return $null
-        }
-    } catch {
-        Write-Log -Message "Error retrieving applications: $($_.Exception.Message)" -Level "Error"
+        $selectedApp = $apps[$choice]
+    }
+
+    $applicationId = $selectedApp.Id.Value
+    $fileName = $selectedApp.ApplicationFileName
+    Write-Log -Message "Selected: $($selectedApp.ApplicationName)  v$($selectedApp.AppVersion)  [$fileName]  Id=$applicationId" -Level "Info"
+
+    $outFile = Join-Path $OutputPath $fileName
+    Write-Log -Message "Downloading application blob to: $outFile" -Level "Info"
+
+    $result = Invoke-DownloadUemAppBlob -Server $Server -Auth $Auth -ApiKey $ApiKey `
+        -ApplicationId $applicationId -BlobType ApplicationFileBlobGUID -OutputPath $outFile -PassThru
+
+    if ($result) {
+        Write-Log -Message "Download complete: $($result.FullName)  ($($result.Length) bytes)" -Level "Success"
+        return $result
+    } else {
+        Write-Log -Message "Download failed for '$($selectedApp.ApplicationName)'" -Level "Error"
         return $null
     }
 }
@@ -5763,4 +6063,4 @@ function Clear-UemDevicePasscode {
     }
 }
 
-Export-ModuleMember -Function Get-OG, Invoke-AWApiCommand, Get-CurrentLoggedonUser, Get-UserSIDLookup, Get-ReverseSID, Write-Log, Write-2Report, Show-Toast, Get-RegistryValue, Get-ServerAuth, Get-Log, Get-WSONEOAuthToken, Get-NewDeviceId, Invoke-AgentCleanup, Get-DevicesByCustomAttribute, Add-DeviceTag, Remove-DeviceTag, Get-DeviceTags, Get-DeviceEnrollmentStatus, Invoke-OGSearch, Get-Enrollment, Compare-EnrollmentSID, Disable-EnrollmentNotifications, Enable-EnrollmentNotifications, Invoke-RestMethodWithRetry, Get-UemAgentInstallInfo, Install-UemAgent, Remove-UemAgent, Get-EnrollmentInfoWithPolling, Wait-UemAppsInstalled, Wait-UemProfilesInstalled, New-Tag, Invoke-DownloadAirwatchAgent, Invoke-CreateTask, Get-App, Invoke-ChunkandUpload, Invoke-UploadfromLink, Get-Baseline, Get-DevicesInBaseline, Get-DevicePoliciesInBaseline, Get-BaselineAssignments, Get-BaselineSummary, Get-BaselineTemplate, Get-UemDevicesExtensive, Get-UemStaleDevices, Get-UemDuplicateDevices, Get-UemProblematicDevices, Remove-UemDevices, New-UemAppIcon, New-UemApplication, Get-UemApplications, Invoke-UemSmartGroupCommand, Get-UemDuplicateUsers, Remove-UemDuplicateUsers, Get-UemDeviceNotes, Update-UemDeviceProperty, Clear-UemDevicePasscode
+Export-ModuleMember -Function Get-OG, Invoke-AWApiCommand, Get-CurrentLoggedonUser, Get-UserSIDLookup, Get-ReverseSID, Write-Log, Write-2Report, Show-Toast, Get-RegistryValue, Get-ServerAuth, Get-Log, Get-WSONEOAuthToken, Get-NewDeviceId, Invoke-AgentCleanup, Get-DevicesByCustomAttribute, Add-DeviceTag, Remove-DeviceTag, Get-DeviceTags, Get-DeviceEnrollmentStatus, Invoke-OGSearch, Get-Enrollment, Compare-EnrollmentSID, Disable-EnrollmentNotifications, Enable-EnrollmentNotifications, Invoke-RestMethodWithRetry, Get-UemAgentInstallInfo, Install-UemAgent, Remove-UemAgent, Get-EnrollmentInfoWithPolling, Wait-UemAppsInstalled, Wait-UemProfilesInstalled, New-Tag, Invoke-DownloadAirwatchAgent, Invoke-DownloadUemAppBlob, Invoke-CreateTask, Get-App, Invoke-ChunkandUpload, Invoke-UploadfromLink, Get-Baseline, Get-DevicesInBaseline, Get-DevicePoliciesInBaseline, Get-BaselineAssignments, Get-BaselineSummary, Get-BaselineTemplate, Get-UemDevicesExtensive, Get-UemStaleDevices, Get-UemDuplicateDevices, Get-UemProblematicDevices, Remove-UemDevices, New-UemAppIcon, New-UemApplication, Invoke-DownloadUemApp, Invoke-UemSmartGroupCommand, Get-UemDuplicateUsers, Remove-UemDuplicateUsers, Get-UemDeviceNotes, Update-UemDeviceProperty, Clear-UemDevicePasscode

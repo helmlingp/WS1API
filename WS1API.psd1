@@ -1,6 +1,6 @@
 @{
     RootModule        = 'WS1API.psm1'
-    ModuleVersion     = '1.0.0'
+    ModuleVersion     = '1.1.0'
     GUID              = 'd7f61bba-8135-45f5-920d-6ca40f0963d6'
     Author            = 'Phil Helmling'
     CompanyName       = ''
@@ -35,7 +35,6 @@
         'Get-ReverseSID',
         'Get-ServerAuth',
         'Get-UemAgentInstallInfo',
-        'Get-UemApplications',
         'Get-UemDeviceNotes',
         'Get-UemDevicesExtensive',
         'Get-UemDuplicateDevices',
@@ -49,6 +48,8 @@
         'Invoke-AWApiCommand',
         'Invoke-ChunkandUpload',
         'Invoke-CreateTask',
+        'Invoke-DownloadUemApp',
+        'Invoke-DownloadUemAppBlob',
         'Invoke-DownloadAirwatchAgent',
         'Invoke-OGSearch',
         'Invoke-RestMethodWithRetry',
@@ -129,11 +130,12 @@ AUTHENTICATION & CONFIGURATION (5 functions):
     - Clear-UemDevicePasscode - Bulk clear device passcodes with confirmation
     - Invoke-UemSmartGroupCommand - Execute commands on smart group devices
 
-    APPLICATIONS (6 functions):
-    - Get-App - Query installed applications from registry
+    APPLICATIONS (7 functions):
+    - Get-App - Search or list UEM applications by name, group, and/or platform, with automatic pagination
     - New-UemAppIcon - Upload app icons with BlobId return
     - New-UemApplication - Create internal apps with platform validation (BundleId mandatory)
-    - Get-UemApplications - Query apps by platform (iOS, Android, macOS, WinRT, ChromeOS)
+    - Invoke-DownloadUemAppBlob - Download internal app icon/package blob using blob UUID
+    - Invoke-DownloadUemApp - Find an app by name (prompting on multiple matches) and download its blob
     - Invoke-ChunkandUpload - Handle large file uploads with chunking
     - Invoke-UploadfromLink - Upload application from external URL
     
