@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.0 - September 2026
+
+This release renames functions for naming consistency and fixes several logging/auth bugs:
+
+- Renamed 20 functions to drop the redundant "Uem" segment (e.g. Get-UemStaleDevices -> Get-StaleDevices, Invoke-DownloadUemAppBlob -> Invoke-DownloadAppBlob, Clear-UemDevicePasscode -> Clear-DevicePasscode); Get-DevicesExtensive renamed to Get-Devices. Breaking change - update any scripts calling the old names.
+- Get-ServerAuth automatically prepends "https://" to -Server when the scheme is omitted
+- Write-Log: -Path was declared incorrectly and never actually bound as a parameter; fixed so -Path/-LogPath/-LogLocation all work correctly
+- Write-Log: messages at Info/Success level were silently dropped from the log file and console; all levels are now written
+- Write-Log and Get-Log: OS delimiter detection was inverted on PowerShell 7+ (always used "\" regardless of platform); corrected for cross-platform use
+- Write-Log and Get-Log: no longer throw when called outside a running script; fall back gracefully to a generic name/location
+- Get-Log gained the same script-name/date/current-folder auto-detection as Write-Log; -logFileName and -current_path are now optional
+- Invoke-AWApiCommand: fixed invalid parameter calls in the retry/error-handling path that could throw, and corrected the "server offline" detection which previously never matched
+- Added Tests/run_full_suite.ps1, a combined live/mocked smoke test exercising every exported function against a real tenant
+
+Total functions exported: 58
+
 ## 1.1.0 - August 2026
 
 This release adds application lifecycle operations and refines existing functions:

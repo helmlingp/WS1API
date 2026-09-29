@@ -1,0 +1,11 @@
+{
+  "Server": "https://your-test-tenant.awmdm.com",
+  "AuthMethod": "Basic",
+  "Username": "your-test-username",
+  "Password": "your-test-password",
+  "ApiKey": "your-aw-tenant-code",
+  "OGName": "YourTestOrgGroupName",
+  "ClientId": "",
+  "ClientSecret": "",
+  "TokenUrl": ""
+}

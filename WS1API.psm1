@@ -1,4 +1,4 @@
-﻿<#
+<#
  .Synopsis
     PowerShell module for interacting with Omnissa Workspace ONE UEM RestAPI with OAuth support
  .NOTES
@@ -23,33 +23,33 @@
     - Invoke-OGSearch - Search for OG and prompt user to select from results
     - Get-Enrollment - Retrieve detailed WS1 enrollment info from device registry
     
-    DEVICE DISCOVERY & TAGGING (6 functions):
+    DEVICE DISCOVERY (6 functions):
+    - Get-Devices - Recursive pagination for all devices
+    - Get-StaleDevices - Identify devices not seen in N days (default 90)
+    - Get-DuplicateDevices - Find duplicate devices by serial number with KeepNewest filter
+    - Get-ProblematicDevices - Detect devices with invalid/placeholder serial numbers
     - Get-NewDeviceId - Retrieve device ID from WS1 UEM based on serial number
     - Get-DevicesByCustomAttribute - Search devices by custom attribute name and values
-    - Get-DeviceTags - Retrieve tags from organization group
-    - Get-DeviceEnrollmentStatus - Check device enrollment status
-    - Disable-EnrollmentNotifications - Disable enrollment activity notifications for device
-    - Enable-EnrollmentNotifications - Enable enrollment activity notifications for device
     
     DEVICE MANAGEMENT (11 functions):
     - Add-DeviceTag - Apply tags to devices
     - Remove-DeviceTag - Remove tags from devices
-    - Get-UemDevicesExtensive - Recursive pagination for all devices with full details
-    - Get-UemStaleDevices - Identify devices not seen in N days (default 90)
-    - Get-UemDuplicateDevices - Find duplicate devices by serial number with KeepNewest filter
-    - Get-UemProblematicDevices - Detect devices with invalid/placeholder serial numbers
-    - Remove-UemDevices - Bulk delete devices via /api/mdm/devices/bulk with confirmation
-    - Get-UemDeviceNotes - Retrieve console notes for devices
-    - Update-UemDeviceProperty - Update device properties (FriendlyName, AssetNumber)
-    - Clear-UemDevicePasscode - Bulk clear device passcodes with confirmation
-    - Invoke-UemSmartGroupCommand - Execute commands on smart group devices
+    - Get-DeviceTags - Retrieve tags from organization group
+    - Get-DeviceEnrollmentStatus - Check device enrollment status
+    - Disable-EnrollmentNotifications - Disable enrollment activity notifications for device
+    - Enable-EnrollmentNotifications - Enable enrollment activity notifications for device
+    - Remove-Devices - Bulk delete devices via /api/mdm/devices/bulk with confirmation
+    - Get-DeviceNotes - Retrieve console notes for devices
+    - Update-DeviceProperty - Update device properties (FriendlyName, AssetNumber)
+    - Clear-DevicePasscode - Bulk clear device passcodes with confirmation
+    - Invoke-SmartGroupCommand - Execute commands on smart group devices
 
     APPLICATIONS (7 functions):
     - Get-App - Search or list UEM applications by name, group, and/or platform, with automatic pagination
-    - New-UemAppIcon - Upload app icons with BlobId return
-    - New-UemApplication - Create internal apps with platform validation (BundleId mandatory)
-    - Invoke-DownloadUemAppBlob - Download internal app icon/package blob using blob UUID
-    - Invoke-DownloadUemApp - Find an app by name (prompting on multiple matches) and download its blob
+    - New-AppIcon - Upload app icons with BlobId return
+    - New-Application - Create internal apps with platform validation (BundleId mandatory)
+    - Invoke-DownloadAppBlob - Download internal app icon/package blob using blob UUID
+    - Invoke-DownloadApp - Find an app by name (prompting on multiple matches) and download its blob
     - Invoke-ChunkandUpload - Handle large file uploads with chunking
     - Invoke-UploadfromLink - Upload application from external URL
     
@@ -62,13 +62,13 @@
     - Get-BaselineSummary - Get summary statistics for baseline deployments
     
     AGENT MANAGEMENT (7 functions):
-    - Get-UemAgentInstallInfo - Check Workspace ONE agent installation status
-    - Install-UemAgent - Install and enroll the WS1 Hub agent
-    - Remove-UemAgent - Uninstall the WS1 Hub agent
+    - Get-AgentInstallInfo - Check Workspace ONE agent installation status
+    - Install-Agent - Install and enroll the WS1 Hub agent
+    - Remove-Agent - Uninstall the WS1 Hub agent
     - Invoke-DownloadAirwatchAgent - Download agent installer from UEM server
     - Invoke-AgentCleanup - Remove Workspace ONE Agent and artifacts
-    - Wait-UemAppsInstalled - Wait for assigned apps to install on device
-    - Wait-UemProfilesInstalled - Wait for assigned profiles to install on device
+    - Wait-AppsInstalled - Wait for assigned apps to install on device
+    - Wait-ProfilesInstalled - Wait for assigned profiles to install on device
     
     USER MANAGEMENT & ENROLLMENT (5 functions):
     - Get-CurrentLoggedonUser - Get currently logged-on user on local system
@@ -76,18 +76,18 @@
     - Get-ReverseSID - Translate SID to username or group name
     - Compare-EnrollmentSID - Compare current user SID with enrollment SID
     - Get-EnrollmentInfoWithPolling - Poll UEM API for device enrollment info with retries
-    - Get-UemDuplicateUsers - Find duplicate user accounts
-    - Remove-UemDuplicateUsers - Delete duplicate user accounts with confirmation
+    - Get-DuplicateUsers - Find duplicate user accounts
+    - Remove-DuplicateUsers - Delete duplicate user accounts with confirmation
     
-    LOCAL SYSTEM & UTILITIES (5 functions):
+    LOCAL SYSTEM & UTILITIES (4 functions):
     - Get-RegistryValue - Query Windows registry values
-    - Get-Log - Retrieve and parse log files
     - Invoke-CreateTask - Create scheduled task for automation
     - Show-Toast - Display Windows toast notification to user (persistent by default, or auto-dismiss via -Timeout)
     - New-Tag - Create new tag in organization group
     
-    LOGGING & REPORTING (2 functions):
-    - Write-Log - Write timestamped, color-coded log messages to file and console
+    LOGGING & REPORTING (3 functions):
+    - Get-Log - Retrieve and parse log files
+    - Write-Debug - Write timestamped, color-coded log messages to file and console
     - Write-2Report - Generate formatted report output with decorative borders
 
     HELP DOCUMENTATION:
@@ -108,21 +108,21 @@
 
    # PHASE 1 - Device Management Workflow
    # Find stale devices not seen in 180 days
-   $staleDevices = Get-UemStaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   $staleDevices = Get-StaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -DaysSinceLastSeen 180
    
    # Find duplicate devices and keep newest
-   $duplicates = Get-UemDuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   $duplicates = Get-DuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -KeepNewest -ExcludeProblematicSerials
    
    # Bulk delete devices
-   Remove-UemDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   Remove-Devices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -DeviceIds ($duplicates | Select-Object -ExpandProperty Id)
 
  .Example
    # PHASE 2 - Application Distribution Workflow
    # Upload app icon
-   $blobId = Send-UemAppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   $blobId = New-AppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -IconFile "C:\path\to\icon.png"
    
    # Or upload chunked app file
@@ -130,42 +130,42 @@
        -FilePath "C:\app.ipa" -ChunkSizesMB 10
    
    # Create application (BundleId is mandatory for versioning)
-   $app = New-UemApplication -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   $app = New-Application -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -ApplicationName "MyApp" -Platform iOS -BundleId 1001 `
        -OrganizationGroupUuid $auth.OrgGroupUUID -BlobId $blobId -ApplicationVersion "1.0"
 
  .Example
    # PHASE 2 - Smart Group Command Execution
    # Lock all devices in smart group
-   $lockedCount = Invoke-UemSmartGroupCommand -Server $auth.Server -Auth $auth.cred `
+   $lockedCount = Invoke-SmartGroupCommand -Server $auth.Server -Auth $auth.cred `
        -ApiKey $auth.ApiKey -SmartGroupId "sg-12345" -Command "Lock"
    
    # Or get list of affected devices
-   $devices = Invoke-UemSmartGroupCommand -Server $auth.Server -Auth $auth.cred `
+   $devices = Invoke-SmartGroupCommand -Server $auth.Server -Auth $auth.cred `
        -ApiKey $auth.ApiKey -SmartGroupId "sg-12345" -Command "SyncDevice" -PassThru
 
  .Example
    # PHASE 3 - Device Properties & Maintenance Workflow
    # Update device properties
-   Update-UemDeviceProperty -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   Update-DeviceProperty -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -SerialNumber "ABC123XYZ" -FriendlyName "LAPTOP-001" -AssetNumber "ASSET-12345"
    
    # Retrieve device notes from console
-   $notes = Get-UemDeviceNotes -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   $notes = Get-DeviceNotes -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -SerialNumber "ABC123XYZ"
    
    # Clear passcodes on multiple devices
-   @("ABC123XYZ", "DEF456UVW", "GHI789RST") | Clear-UemDevicePasscode `
+   @("ABC123XYZ", "DEF456UVW", "GHI789RST") | Clear-DevicePasscode `
        -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Force
 
  .Example
    # PHASE 2 - User Management Workflow
    # Find duplicate user accounts
-   $duplicates = Get-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred `
+   $duplicates = Get-DuplicateUsers -Server $auth.Server -Auth $auth.cred `
        -ApiKey $auth.ApiKey -UserType "BasicOnly"
    
    # Delete duplicates (requires 'DELETE' confirmation)
-   Remove-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+   Remove-DuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
        -UserIds ($duplicates | Select-Object -ExpandProperty Uuid)
 
  .Example
@@ -211,7 +211,6 @@
    # Logging with Write-Log
    Write-Log -Message "Device enrollment completed" -Level "Success"
    Write-Log -Message "Failed to connect to server" -Path "C:\Logs\deploy.log" -Level "Error"
-
  .Example
    # Generate formatted report
    Write-2Report -Path "C:\Reports\WS1Report.log" -Message "Device Deployment Report" -Level "Title"
@@ -255,7 +254,7 @@ function Get-ServerAuth {
     Precedence: explicit -AuthMethod parameter > auto-detect complete method > prompt user
     
     .PARAMETER Server
-    The WS1 UEM server hostname or URL.
+    The WS1 UEM server hostname or URL. "https://" is prepended automatically if omitted.
     
     .PARAMETER Username
     Username for Basic authentication.
@@ -305,33 +304,32 @@ function Get-ServerAuth {
     - AuthMode: Authentication method used (Basic or OAuth2)
     - cred: Authorization header value (Basic or Bearer token) ready for API calls
     #>
-
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
         [string]$Server,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$Username,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$Password,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ApiKey,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$OGName,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ClientId,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ClientSecret,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$TokenUrl,
-        
+
         [Parameter(Mandatory = $false)]
         [ValidateSet("Basic", "OAuth2")]
         [string]$AuthMethod
@@ -410,14 +408,18 @@ function Get-ServerAuth {
         
         $credential = Get-WSONEOAuthToken -ClientId $ClientId -ClientSecret $ClientSecret -TokenUrl $TokenUrl
     }
-    
-    if ($Debug) { 
-        Write-Information "`nServer Auth"
-        Write-Information "WS1 Host: $Server"
-        Write-Information "Auth Mode: $localMethod"
-        Write-Information "APIKey: [REDACTED]"
-        Write-Information "OG Name: $OGName"
+
+    # Prepend scheme if the server was given as a bare hostname
+    if ($Server -notmatch '^https?://') {
+        $Server = "https://$Server"
     }
+
+    Write-Debug "`nServer Auth"
+    Write-Debug "WS1 Host: $Server"
+    Write-Debug "Auth Mode: $localMethod"
+    Write-Debug "APIKey: [REDACTED]"
+    Write-Debug "Credential: [REDACTED]"
+    Write-Debug "OG Name: $OGName"
     
     return @{
         Server   = $Server
@@ -590,35 +592,6 @@ function Get-BasicAuthCredential {
     return "Basic $encoded"
 }
 
-function Get-Log {
-    <#
-    .SYNOPSIS
-    Retrieves the log file path for the specified log file name and current path.
-    
-    .PARAMETER logFileName
-    The name of the log file.
-    
-    .PARAMETER current_path
-    The current path where the log file will be created.
-    
-    .OUTPUTS
-    String - The full path of the log file.
-    #>
-
-    [CmdletBinding()]
-    param (
-        [Parameter()]
-        [string]$logFileName,
-        [string]$current_path
-    )
-    $DateNow = Get-Date -Format "yyyyMMdd_HHmm";
-    $Path = "$current_path\$logFileName\_$DateNow.log";
-    if ($Debug) {
-        Write-Host "Path: $Path"
-        Write-Host "LogLocation: $LogLocation"
-    }
-    return $path
-}
 
 function Get-NewDeviceId {
     <#
@@ -700,9 +673,6 @@ function Get-OG {
     .PARAMETER OrgGroup
     The Organization Group name to search for
     
-    .PARAMETER Debug
-    Switch to enable debug logging
-    
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key123" -OGName "Corporate"
     $OG = Get-OG -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -OrgGroup $auth.OGName
@@ -715,27 +685,134 @@ function Get-OG {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Server,
+
         [Parameter(Mandatory = $true)]
         [string]$Auth,
+
         [Parameter(Mandatory = $true)]
         [string]$apikey,
+
         [Parameter(Mandatory = $true)]
-        [string]$OrgGroup,
-        [Parameter(Mandatory = $false)]
-        [bool]$Debug = $false
+        [string]$OrgGroup
     )
 
     $og_search_endpoint = "$Server/API/system/groups/search?name=$OrgGroup";
 
-    $OG_Search = Invoke-AWApiCommand -Method Get -Endpoint $og_search_endpoint -ApiVersion 2 -Auth $Auth -Apikey $apikey -Debug $Debug
+    $OG_Search = Invoke-AWApiCommand -Method Get -Endpoint $og_search_endpoint -ApiVersion 2 -Auth $Auth -Apikey $apikey
     if ($OG_Search.OrganizationGroups) {
-        if ($Debug) {
-            $OGName = $OG_Search.OrganizationGroups[0].Name
-            $OGID = $OG_Search.OrganizationGroups[0].Id
-            Write-Log -Path $logLocation -Message "OG Name $OGName & OG ID $OGID" -Level Info
-        }
+        $OGName = $OG_Search.OrganizationGroups[0].Name
+        $OGID = $OG_Search.OrganizationGroups[0].Id
+        Write-Debug "OG Name $OGName & OG ID $OGID"
     }
     return $OG_Search;
+}
+
+function Invoke-OGSearch {
+    <#
+    .SYNOPSIS
+    Search for Organization Groups and prompt user to select from results.
+    
+    .DESCRIPTION
+    Queries Workspace ONE UEM for Organization Groups matching a partial name search.
+    If multiple matches found, displays list and prompts user for selection.
+    Returns the selected Organization Group with UUID, Name, GroupId, and Country properties.
+    
+    .PARAMETER Server
+    Workspace ONE UEM server hostname or FQDN (e.g., uem.example.com).
+    
+    .PARAMETER Auth
+    Authorization credential in format "Basic {base64string}" (for Basic auth) or "Bearer {token}" (for OAuth2).
+    Typically obtained from Get-ServerAuth -cred property.
+    
+    .PARAMETER ApiKey
+    Workspace ONE UEM API Key (aw-tenant-code) for authentication.
+    
+    .PARAMETER OrgGroup
+    Organization Group name or partial name to search for.
+    
+    .PARAMETER Debug
+    Enable debug output to console.
+    
+    .EXAMPLE
+    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass123" -ApiKey "key" -OGName "IT"
+    $selectedOG = Invoke-OGSearch -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -OrgGroup "IT"
+    Write-Host "Selected OG: $($selectedOG.Name) with UUID: $($selectedOG.Uuid)"
+    
+    .OUTPUTS
+    PSCustomObject with Uuid, Name, GroupId, and Country properties of selected Organization Group, or $null if user cancels
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Server,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$Auth,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$ApiKey,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$OrgGroup
+    )
+    
+    $OGSearch = Get-OG -Server $Server -Auth $Auth -ApiKey $ApiKey -OrgGroup $OrgGroup
+    $OGSearchOGs = $OGSearch.OrganizationGroups
+    $OGSearchTotal = $OGSearch.TotalResults
+    
+    Write-Debug "OGSearch: $OGSearch"
+    
+    if($null -eq $OGSearch){
+        Write-Debug "Server Authentication or Server Connection Failure"
+        return $null
+    } elseif ($OGSearchTotal -eq 1){
+        $selectedOG = [PSCustomObject]@{
+            Uuid = $OGSearch.OrganizationGroups[0].Uuid
+            Name = $OGSearch.OrganizationGroups[0].Name
+            GroupId = $OGSearch.OrganizationGroups[0].GroupId
+            Country = $OGSearch.OrganizationGroups[0].Country
+        }
+        Write-Debug "Selected OG UUID: $($selectedOG.Uuid)"
+        return $selectedOG
+    } elseif ($OGSearchTotal -gt 1) {
+        $ValidChoices = 0..($OGSearchOGs.Count -1)
+        $ValidChoices += 'Q'
+        Write-Host "`nMultiple OGs found. Please select an OG from the list:" -ForegroundColor Yellow
+        $Choice = ''
+        while ([string]::IsNullOrEmpty($Choice)) {
+
+            $i = 0
+            foreach ($OG in $OGSearchOGs) {
+                Write-Host ('{0}: {1}       {2}       {3}' -f $i, $OG.name, $OG.GroupId, $OG.Country)
+                $i += 1
+            }
+
+            $Choice = Read-Host -Prompt 'Type the number that corresponds to the OG or Press "Q" to quit'
+            if ($Choice -in $ValidChoices) {
+                if ($Choice -eq 'Q'){
+                    Write-Log -Message "User exited OG selection" -Level "Info"
+                    return $null
+                } else {
+                    $selectedOG = [PSCustomObject]@{
+                        Uuid = $OGSearchOGs[$Choice].Uuid
+                        Name = $OGSearchOGs[$Choice].Name
+                        GroupId = $OGSearchOGs[$Choice].GroupId
+                        Country = $OGSearchOGs[$Choice].Country
+                    }
+                    return $selectedOG
+                }
+            } else {
+                [console]::Beep(1000, 300)
+                Write-Warning ('    [ {0} ] is NOT a valid selection.' -f $Choice)
+                Write-Warning '    Please try again ...'
+                pause
+                $Choice = ''
+            }
+        }
+    } else {
+        Write-Debug "No Organization Groups found matching '$OrgGroup'"
+        return $null
+    }
 }
 
 function Invoke-AWApiCommand {
@@ -776,9 +853,6 @@ function Invoke-AWApiCommand {
     .PARAMETER RetryIntervalSeconds
     Base interval in seconds for exponential backoff. Only used if -EnableRetry is specified. Default is 60.
     
-    .PARAMETER Debug
-    Switch to enable debug logging to console
-    
     .EXAMPLE
     $auth = Get-ServerAuth
     $result = Invoke-AWApiCommand -Method GET -Endpoint "https://uem.example.com/api/v1/devices" -Auth $auth.cred -Apikey $auth.ApiKey
@@ -815,9 +889,7 @@ function Invoke-AWApiCommand {
         [Parameter(Mandatory = $false)]
         [int]$MaxAttempts = 3,
         [Parameter(Mandatory = $false)]
-        [int]$RetryIntervalSeconds = 60,
-        [Parameter(Mandatory = $false)]
-        [bool]$Debug = $false
+        [int]$RetryIntervalSeconds = 60
     )
 
     $headers = @{
@@ -841,13 +913,11 @@ function Invoke-AWApiCommand {
                 $WebRequest = Invoke-WebRequest -Uri $Endpoint -Method $Method -UseBasicParsing -Headers $headers
             }
             
-            if ($Debug) {
-                Write-Log -Path $logLocation -Message "Connecting to: $Endpoint" -Level "Info"
-                $statuscode = $WebRequest.StatusCode
-                if ($WebRequest.Content) {
-                    Write-Log -Path $logLocation -Message "WebRequest.StatusCode: $statuscode" -Level "Info"
-                    Write-Log -Path $logLocation -Message $WebRequest.Content -Level "Info"
-                }
+            Write-Debug "Connecting to: $Endpoint"
+            $statuscode = $WebRequest.StatusCode
+            if ($WebRequest.Content) {
+                Write-Debug "WebRequest.StatusCode: $statuscode"
+                Write-Debug $WebRequest.Content
             }
 
             # Success - parse and return
@@ -872,26 +942,26 @@ function Invoke-AWApiCommand {
             $statusCode = $_.Exception.Response.StatusCode.Value__
             
             # Handle offline scenario
-            if ($_.Exception -like "Unable to connect to the remote server") {
+            if ($_.Exception -like "*Unable to connect to the remote server*") {
                 Write-Log -Path $logLocation -Message "Server is offline: $ErrorMessage" -Level "Error"
                 return "Offline"
             }
-            
+
             # Determine if error is transient
-            $isTransient = ($statusCode -ge 500) -or ($statusCode -eq 408) -or ($statusCode -eq 429)
-            
+            #$isTransient = ($statusCode -ge 500) -or ($statusCode -eq 408) -or ($statusCode -eq 429)
+
             # Client errors (4xx except 408, 429) should not retry
             if ($statusCode -ge 400 -and $statusCode -lt 500 -and -not ($statusCode -eq 408 -or $statusCode -eq 429)) {
                 Write-Log -Path $logLocation -Message "HTTP $statusCode (client error, not retrying): $ErrorMessage" -Level "Error"
                 return (New-Object -TypeName PSCustomObject -Property @{"Error" = "$ErrorMessage" })
             }
-            
+
             # If retry is disabled or this is the last attempt, return error
             if (-not $EnableRetry -or $attempt -eq ($maxRetries - 1)) {
                 Write-Log -Path $logLocation -Message "An error has occurred. Error: $ErrorMessage" -Level "Error"
                 return (New-Object -TypeName PSCustomObject -Property @{"Error" = "$ErrorMessage" })
             }
-            
+
             # Calculate exponential backoff
             $attempt++
             $sleepTime = $RetryIntervalSeconds * [Math]::Pow(2, $attempt)
@@ -992,14 +1062,14 @@ function Invoke-RestMethodWithRetry {
                 
                 # Client errors (4xx) except transient ones are not retried
                 if ($statusCode -ge 400 -and $statusCode -lt 500 -and -not $isTransient) {
-                    Write-Log -Message "HTTP $statusCode error (client error, not retrying): $($_.Exception.Message)" -Level "Error"
+                    Write-Debug "HTTP $statusCode error (client error, not retrying): $($_.Exception.Message)"
                     throw $_
                 }
             }
             
             # Last attempt failed
             if ($attempts -eq ($MaxAttempts - 1)) {
-                Write-Log -Message "Failed after $MaxAttempts attempts: $($_.Exception.Message)" -Level "Error"
+                Write-Debug "Failed after $MaxAttempts attempts: $($_.Exception.Message)"
                 throw $_
             }
         }
@@ -1656,6 +1726,61 @@ function Get-ReverseSID {
     }
 }
 
+function Get-Log {
+    <#
+    .SYNOPSIS
+    Retrieves the log file path for the specified log file name and current path.
+
+    .PARAMETER logFileName
+    The name of the log file. Defaults to the calling script's base name if omitted.
+
+    .PARAMETER current_path
+    The current path where the log file will be created. Defaults to $PSScriptRoot, or the
+    current location if $PSScriptRoot is unavailable, when omitted.
+
+    .OUTPUTS
+    String - The full path of the log file.
+    #>
+
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        [string]$logFileName,
+        [string]$current_path
+    )
+
+    if (!$current_path) {
+        $current_path = $PSScriptRoot
+        if ($null -eq $PSScriptRoot) {
+            #PSScriptRoot only populates if the script is being run.  Default to default location if empty
+            $current_path = Get-Location
+        }
+    }
+
+    if ($null -eq $IsWindows -or $IsWindows) {
+        $delimiter = "\"
+    } else {
+        $delimiter = "/"
+    }
+
+    if (!$logFileName) {
+        $scriptPath = $MyInvocation.PSCommandPath
+        if ([string]::IsNullOrEmpty($scriptPath)) { $scriptPath = $PSCommandPath }
+        if ([string]::IsNullOrEmpty($scriptPath)) {
+            $scriptBaseName = "PowerShell"
+        } else {
+            $scriptBaseName = [System.IO.Path]::GetFileNameWithoutExtension($scriptPath)
+        }
+    } else {
+        $scriptBaseName = $logFileName
+    }
+
+    $DateNow = Get-Date -Format "yyyyMMdd_HHmm";
+    [string]$Path = "$current_path$delimiter${scriptBaseName}_$DateNow.log";
+    Write-Debug "Path: $Path"
+    return $Path
+}
+
 function Write-Log {
     <#
     .SYNOPSIS
@@ -1679,10 +1804,10 @@ function Write-Log {
     
     .EXAMPLE
     Write-Log -Message "Device enrollment completed" -Level "Success"
-    
+
     .EXAMPLE
     Write-Log -Message "Failed to connect to server" -Path "C:\Logs\deployment.log" -Level "Error"
-    
+
     .EXAMPLE
     Write-Log -Message "Configuration updated" -Level "Info" -NoClobber
     
@@ -1695,10 +1820,13 @@ function Write-Log {
     (
         [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()] [Alias("LogContent")] [string]$Message,
+
         [Parameter(Mandatory = $false)]
-        [Alias('LogPath')] [Alias('LogLocation')] [string]$Local:Path,
+        [Alias('LogPath')] [Alias('LogLocation')] [string]$Path,
+
         [Parameter(Mandatory = $false)]
         [ValidateSet("Success", "Error", "Warn", "Info")] [string]$Level = "Info",
+
         [Parameter(Mandatory = $false)] [switch]$NoClobber
     )
 
@@ -1706,28 +1834,29 @@ function Write-Log {
         # Set VerbosePreference to Continue so that verbose messages are displayed.
         $VerbosePreference = 'Continue'
 
-        if(!$LogPath){
-            $LogPath = $PSScriptRoot;
+        if(!$Path){
+            $Path = $PSScriptRoot;
             if($null -eq $PSScriptRoot){
                 #PSScriptRoot only popuates if the script is being run.  Default to default location if empty
-                $LogPath = Get-Location
+                $Path = Get-Location
             }
         }
-		#write-host "LogPath: $LogPath"
-		if($null -eq $IsWindows){
-			if($env:OS -eq "Windows_NT"){
-				$delimiter = "\"
-			}else{
-				$delimiter = "/"
-			}
-		} else {
+		#write-host "Path: $Path"
+		if($null -eq $IsWindows -or $IsWindows){
 			$delimiter = "\"
+		} else {
+			$delimiter = "/"
 		}
         $DateNow = Get-Date -Format "yyyyMMdd"
-        $scriptName = split-path $MyInvocation.PSCommandPath -Leaf
-        $scriptBaseName = $scriptName.TrimEnd(".ps1")
+        $scriptPath = $MyInvocation.PSCommandPath
+        if ([string]::IsNullOrEmpty($scriptPath)) { $scriptPath = $PSCommandPath }
+        if ([string]::IsNullOrEmpty($scriptPath)) {
+            $scriptBaseName = "PowerShell"
+        } else {
+            $scriptBaseName = [System.IO.Path]::GetFileNameWithoutExtension($scriptPath)
+        }
         $Script:NewLogFileName = "$scriptBaseName"+"_"+"$DateNow"+".log"
-        $Script:NewLogFile = "$LogPath"+"$delimiter"+"$Script:NewLogFileName"
+        $Script:NewLogFile = "$Path"+"$delimiter"+"$Script:NewLogFileName"
 
         if (!(Test-Path $Script:NewLogFile)) {
             # If attempting to write to a log file in a folder/path that doesn't exist create the file including the path.
@@ -1746,7 +1875,7 @@ function Write-Log {
     process {
         # If the file already exists and NoClobber was specified, do not write to the log.
         if ((Test-Path $Script:LogFile) -and $NoClobber) {
-            Write-Error "Log file $Local:LogFile already exists, and you specified NoClobber. Either delete the file or specify a different LogPath."
+            Write-Error "Log file $Script:LogFile already exists, and you specified NoClobber. Either delete the file or specify a different LogPath."
             return
         }
 
@@ -1796,8 +1925,10 @@ function Write-2Report {
     (
         [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()] [Alias("LogContent")] [string]$Message,
+
         [Parameter(Mandatory = $true)]
         [Alias('LogPath')] [Alias('LogLocation')] [string]$Path,
+
         [Parameter(Mandatory = $false)]
         [ValidateSet("Title", "Header", "Body", "Footer", "Error")] [string]$Level = "Body"       
     )
@@ -1824,7 +1955,7 @@ function Write-2Report {
     }
 
     Add-Content -Path $Path -Value ("$Message")
-    Write-Information "$Message" -ForegroundColor $FontColor;
+    Write-Host "$Message" -ForegroundColor $FontColor;
     
 }
 
@@ -1989,7 +2120,6 @@ function Invoke-AgentCleanup {
     param()
     
     Write-Log -Message "Starting Workspace ONE Agent Cleanup" -Level "Info"
-    
     $apps2remove = @("Workspace ONE", "*AirWatchLLC*")
     $regpaths2remove = @(
         "HKLM:\SOFTWARE\Airwatch"
@@ -2023,7 +2153,7 @@ function Invoke-AgentCleanup {
             $win32App.Uninstall() | Out-Null
         }
     }
-    
+
     Write-Log -Message "Removing WS1 Registry Keys" -Level "Info"
     foreach ($path in $regpaths2remove) {
         if (Test-Path $path) {
@@ -2031,7 +2161,7 @@ function Invoke-AgentCleanup {
             Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
         }
     }
-    
+
     Write-Log -Message "Removing WS1 Files and Folders" -Level "Info"
     foreach ($path in $filepaths2remove) {
         if (Test-Path $path) {
@@ -2039,7 +2169,7 @@ function Invoke-AgentCleanup {
             Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
         }
     }
-    
+
     Write-Log -Message "Removing WS1 Certificates" -Level "Info"
     foreach ($certname in $certs2remove) {
         $certs = Get-ChildItem cert: -Recurse | Where-Object {$_.Issuer -like $certname} -ErrorAction SilentlyContinue
@@ -2048,7 +2178,7 @@ function Invoke-AgentCleanup {
             Remove-Item -Path $cert.PSPath -Force -ErrorAction SilentlyContinue | Out-Null
         }
     }
-    
+
     Write-Log -Message "Workspace ONE Agent Cleanup completed" -Level "Success"
 }
 
@@ -2198,7 +2328,7 @@ function New-Tag {
     
     # Validate tag name
     if ([string]::IsNullOrEmpty($TagName) -or $TagName.Length -gt 255) {
-        Write-Log -Message "Tag name must be non-empty and not exceed 255 characters" -Level "Error"
+        Write-Debug "Tag name must be non-empty and not exceed 255 characters"
         return $null
     }
     
@@ -2207,13 +2337,12 @@ function New-Tag {
     $ogResponse = Get-OG -Server $Server -Auth $Auth -Apikey $ApiKey -OrgGroup $OrgGroupName
     
     if (-not $ogResponse -or -not $ogResponse.OrganizationGroups -or $ogResponse.OrganizationGroups.Count -eq 0) {
-        Write-Log -Message "Organization Group '$OrgGroupName' not found" -Level "Error"
+        Write-Debug "Organization Group '$OrgGroupName' not found"
         return $null
     }
     
     $OrgGroupUuid = $ogResponse.OrganizationGroups[0].Uuid
-    Write-Log -Message "Found OG UUID: $OrgGroupUuid" -Level "Info"
-    
+    Write-Log -Message "Found OG UUID: $OrgGroupUuid" -Level "Info"    
     # Create tag via V3 API
     $tagPayload = @{
         tag_name              = $TagName
@@ -2228,7 +2357,7 @@ function New-Tag {
         return $response
     } else {
         $errorMsg = if ($response.Error) { $response.Error } else { "Unknown error" }
-        Write-Log -Message "Failed to create tag '$TagName': $errorMsg" -Level "Error"
+        Write-Debug "Failed to create tag '$TagName': $errorMsg"
         return $null
     }
 }
@@ -2388,7 +2517,7 @@ function Add-DeviceTag {
     } else {
         if ($CreateIfMissing) {
             if ([string]::IsNullOrEmpty($OrgGroupName)) {
-                Write-Log -Message "OrgGroupName is required when using -CreateIfMissing" -Level "Error"
+                Write-Debug "OrgGroupName is required when using -CreateIfMissing"
                 return $null
             }
             
@@ -2396,14 +2525,14 @@ function Add-DeviceTag {
             $createdTag = New-Tag -Server $Server -Auth $Auth -ApiKey $ApiKey -TagName $TagName -OrgGroupName $OrgGroupName
             
             if (-not $createdTag) {
-                Write-Log -Message "Failed to create tag '$TagName'" -Level "Error"
+                Write-Debug "Failed to create tag '$TagName'"
                 return $null
             }
             
             $tagUuid = $createdTag.uuid
             Write-Log -Message "Tag created with UUID: $tagUuid" -Level "Success"
         } else {
-            Write-Log -Message "Tag '$TagName' not found. Use -CreateIfMissing to create it automatically." -Level "Error"
+            Write-Debug "Tag '$TagName' not found. Use -CreateIfMissing to create it automatically."
             return $null
         }
     }
@@ -2587,8 +2716,7 @@ function Get-Enrollment {
     PSCustomObject with UPN, GUID, and Server properties if enrolled, or $false if not enrolled.
     #>
     
-    Write-Log -Message "Checking for valid Workspace ONE Enrollment..." -Level "Info"
-    
+    Write-Log -Message "Checking for valid Workspace ONE Enrollment..." -Level "Info"    
     # Getting GUID from MDM Enrollment
     $val = (Get-ItemProperty -Path "HKLM:SOFTWARE\Microsoft\Provisioning\OMADM\Accounts\*" -ErrorAction SilentlyContinue).PSChildname
     
@@ -2657,8 +2785,7 @@ function Compare-EnrollmentSID {
         [psobject]$Enrollment
     )
     
-    Write-Log -Message "Checking Windows and enrollment SIDs..." -Level "Info"
-    
+    Write-Log -Message "Checking Windows and enrollment SIDs..." -Level "Info"    
     # Get current logged-in user session
     $user = quser | Select-Object -Skip 1 | ConvertFrom-String -PropertyNames NTAccount, SessionName, SessionId, SessionState, Idle, Login
     
@@ -2675,7 +2802,7 @@ function Compare-EnrollmentSID {
         Write-Log -Message "NTAccount: $ntAccount" -Level "Info"
         Write-Log -Message "Active Windows SID: $currentSID" -Level "Info"
     } else {
-        Write-Log -Message "No logged in User to verify SID...exiting." -Level "Error"
+        Write-Debug "No logged in User to verify SID...exiting."
         return $false
     }
     
@@ -2685,7 +2812,7 @@ function Compare-EnrollmentSID {
     }
     
     if (-not $Enrollment) {
-        Write-Log -Message "No Workspace ONE enrollment found." -Level "Error"
+        Write-Debug "No Workspace ONE enrollment found."
         return $false
     }
     
@@ -2700,8 +2827,7 @@ function Compare-EnrollmentSID {
             $WS1_SID = $WS1_SID[-1] # Select last item in array (proper enrollment SID)
         }
         
-        Write-Log -Message "Enrollment SID: $WS1_SID" -Level "Info"
-        
+        Write-Log -Message "Enrollment SID: $WS1_SID" -Level "Info"        
         If ($currentSID -eq $WS1_SID) {
             Write-Log -Message "SIDs Match" -Level "Success"
             return $true
@@ -2710,7 +2836,7 @@ function Compare-EnrollmentSID {
             return $false
         }
     } catch {
-        Write-Log -Message "Error comparing SIDs: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error comparing SIDs: $($_.Exception.Message)"
         return $false
     }
 }
@@ -2758,7 +2884,7 @@ function Disable-EnrollmentNotifications {
         Set-ItemProperty -Path $regPath -Name "Enabled" -Type DWord -Value 0 -Force -ErrorAction SilentlyContinue
         Write-Log -Message "Device enrollment activity notifications disabled" -Level "Success"
     } catch {
-        Write-Log -Message "Error disabling notifications: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error disabling notifications: $($_.Exception.Message)"
     }
 }
 
@@ -2804,11 +2930,11 @@ function Enable-EnrollmentNotifications {
         Remove-ItemProperty -Path $regPath -Name "Enabled" -ErrorAction SilentlyContinue -Force
         Write-Log -Message "Device enrollment activity notifications enabled" -Level "Success"
     } catch {
-        Write-Log -Message "Error enabling notifications: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error enabling notifications: $($_.Exception.Message)"
     }
 }
 
-function Get-UemAgentInstallInfo {
+function Get-AgentInstallInfo {
     <#
     .SYNOPSIS
     Retrieves installation information for the Workspace ONE Intelligent Hub agent.
@@ -2817,7 +2943,7 @@ function Get-UemAgentInstallInfo {
     Queries WMI to check if Workspace ONE Intelligent Hub Installer is installed and returns installation status.
     
     .EXAMPLE
-    $agentInfo = Get-UemAgentInstallInfo
+    $agentInfo = Get-AgentInstallInfo
     if ($agentInfo -and $agentInfo.InstallState -eq 5) {
         Write-Host "Agent is installed"
     } else {
@@ -2836,12 +2962,12 @@ function Get-UemAgentInstallInfo {
         }
         return $installInfo
     } catch {
-        Write-Log -Message "Error checking Hub installation: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error checking Hub installation: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Install-UemAgent {
+function Install-Agent {
     <#
     .SYNOPSIS
     Installs the Workspace ONE Intelligent Hub agent and enrolls the device.
@@ -2869,7 +2995,7 @@ function Install-UemAgent {
     Optional path for installation log. Defaults to script root.
     
     .EXAMPLE
-    Install-UemAgent -AgentMsiPath "C:\Recovery\AirwatchAgent.msi" `
+    Install-Agent -AgentMsiPath "C:\Recovery\AirwatchAgent.msi" `
       -EnrollmentUrl "https://uem.example.com" `
       -EnrollmentOG "Corporate" `
       -EnrollmentUsername "enroll-user" `
@@ -2899,14 +3025,14 @@ function Install-UemAgent {
         [string]$LogPath = $PSScriptRoot
     )
     
-    $installInfo = Get-UemAgentInstallInfo
+    $installInfo = Get-AgentInstallInfo
     if ($installInfo -and $installInfo.InstallState -eq 5) {
         Write-Log -Message "UEM agent is already installed and ready, skipping installation" -Level "Success"
         return
     }
     
     if (-not (Test-Path -Path $AgentMsiPath)) {
-        Write-Log -Message "Unable to find agent MSI file: $AgentMsiPath" -Level "Error"
+        Write-Debug "Unable to find agent MSI file: $AgentMsiPath"
         throw "MSI file not found: $AgentMsiPath"
     }
     
@@ -2915,42 +3041,25 @@ function Install-UemAgent {
     Write-Log -Message "Installing UEM agent from: $AgentMsiPath" -Level "Info"
     Write-Log -Message "Enrollment parameters: Server=$EnrollmentUrl, OG=$EnrollmentOG, User=$EnrollmentUsername" -Level "Info"
     try {
-        Write-Log "Installing AirwatchAgent" -Level Info
+        Write-Log -Message "Installing AirwatchAgent" -Level "Info"
         $process = Start-Process msiexec.exe -ArgumentList "/i","$AgentMsiPath","/quiet","ENROLL=Y","SERVER=$EnrollmentUrl","LGNAME=$EnrollmentOG","USERNAME=$EnrollmentUsername","PASSWORD=$EnrollmentPassword" -NoNewWindow -Wait -PassThru
-        
+
         if ($process.ExitCode -eq 0) {
-            Write-Log "Hub Install Completed." -Level Success
+            Write-Log -Message "Hub Install Completed." -Level "Success"
             #exit 0
         }
         else {
-            Write-Log "Warning: HUB Install failed with exit code $($process.ExitCode)." -Level Error
+            Write-Debug "Warning: HUB Install failed with exit code $($process.ExitCode)."
             exit $($process.ExitCode)
         }
     }
     catch {
-        Write-Log "Error: Script encountered an error: $_" -Level Error
+        Write-Debug "Error: Script encountered an error: $_"
         #exit 1
     }
-<#     try {
-        & msiexec /i $AgentMsiPath /qn /L*V $logFile `
-            ENROLL=Y `
-            SERVER=$EnrollmentUrl `
-            LGNAME=$EnrollmentOG `
-            USERNAME=$EnrollmentUsername `
-            PASSWORD=$EnrollmentPassword
-        
-        if ($LASTEXITCODE -eq 0) {
-            Write-Log -Message "UEM agent installation initiated successfully. Log: $logFile" -Level "Success"
-        } else {
-            Write-Log -Message "MSI installation returned exit code: $LASTEXITCODE. Check log: $logFile" -Level "Warn"
-        }
-    } catch {
-        Write-Log -Message "Error installing UEM agent: $($_.Exception.Message)" -Level "Error"
-        throw $_
-    } #>
 }
 
-function Remove-UemAgent {
+function Remove-Agent {
     <#
     .SYNOPSIS
     Uninstalls the Workspace ONE Intelligent Hub agent from the device.
@@ -2960,15 +3069,14 @@ function Remove-UemAgent {
     Device enrollment should be removed first via appropriate unenrollment method.
     
     .EXAMPLE
-    Remove-UemAgent
+    Remove-Agent
     
     .OUTPUTS
     None - Uninstallation is performed via WMI
     #>
-    Write-Log -Message "Checking if UEM agent uninstall is required..." -Level "Info"
-    
+    Write-Log -Message "Checking if UEM agent uninstall is required..." -Level "Info"    
     try {
-        $installInfo = Get-UemAgentInstallInfo
+        $installInfo = Get-AgentInstallInfo
         
         if ($installInfo -and $installInfo.InstallState -eq 5) {
             Write-Log -Message "UEM agent found and ready. Uninstalling..." -Level "Info"
@@ -2978,7 +3086,7 @@ function Remove-UemAgent {
             Write-Log -Message "UEM agent not found or not in ready state, uninstall not required" -Level "Info"
         }
     } catch {
-        Write-Log -Message "Error uninstalling UEM agent: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error uninstalling UEM agent: $($_.Exception.Message)"
         throw $_
     }
 }
@@ -3056,8 +3164,7 @@ function Get-EnrollmentInfoWithPolling {
     $enrollmentFound = $false
     $attemptCount = 0
     
-    Write-Log -Message "Polling for device enrollment status. Serial: $SerialNumber, Expected: $ExpectedStatus" -Level "Info"
-    
+    Write-Log -Message "Polling for device enrollment status. Serial: $SerialNumber, Expected: $ExpectedStatus" -Level "Info"    
     $endpoint = "$Server/api/mdm/devices?searchby=SerialNumber&id=$([System.Web.HttpUtility]::UrlEncode($SerialNumber))"
     
     while (-not $enrollmentFound -and $attemptCount -lt $MaxAttempts) {
@@ -3091,12 +3198,12 @@ function Get-EnrollmentInfoWithPolling {
     if ($enrollmentFound) {
         return $enrollmentInfo
     } else {
-        Write-Log -Message "Device still not found in $ExpectedStatus state after $($attemptCount * $PollIntervalSeconds) seconds ($attemptCount attempts)" -Level "Error"
+        Write-Debug "Device still not found in $ExpectedStatus state after $($attemptCount * $PollIntervalSeconds) seconds ($attemptCount attempts)"
         return $null
     }
 }
 
-function Wait-UemAppsInstalled {
+function Wait-AppsInstalled {
     <#
     .SYNOPSIS
     Waits for all assigned applications to be installed on a device.
@@ -3128,7 +3235,7 @@ function Wait-UemAppsInstalled {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $success = Wait-UemAppsInstalled -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DeviceUuid "device-uuid-123"
+    $success = Wait-AppsInstalled -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DeviceUuid "device-uuid-123"
     if ($success) { Write-Host "All apps installed" }
     
     .OUTPUTS
@@ -3158,8 +3265,7 @@ function Wait-UemAppsInstalled {
     $appsComplete = $false
     $attemptCount = 0
     
-    Write-Log -Message "Waiting for assigned apps to install on device: $DeviceUuid" -Level "Info"
-    
+    Write-Log -Message "Waiting for assigned apps to install on device: $DeviceUuid" -Level "Info"    
     $endpoint = "$Server/API/mdm/devices/$([System.Web.HttpUtility]::UrlEncode($DeviceUuid))/apps/search"
     
     while (-not $appsComplete -and $attemptCount -lt $MaxAttempts) {
@@ -3175,8 +3281,7 @@ function Wait-UemAppsInstalled {
                 $installedCount = @($installedApps).Count
                 $pendingCount = @($pendingApps).Count
                 
-                Write-Log -Message "App status: $installedCount/$assignedCount installed, $pendingCount pending" -Level "Info"
-                
+                Write-Log -Message "App status: $installedCount/$assignedCount installed, $pendingCount pending" -Level "Info"                
                 if ($pendingCount -eq 0) {
                     $appsComplete = $true
                     Write-Log -Message "All assigned apps installed successfully" -Level "Success"
@@ -3198,11 +3303,11 @@ function Wait-UemAppsInstalled {
         }
     }
     
-    Write-Log -Message "App installation did not complete within timeout period" -Level "Error"
+    Write-Debug "App installation did not complete within timeout period"
     return $false
 }
 
-function Wait-UemProfilesInstalled {
+function Wait-ProfilesInstalled {
     <#
     .SYNOPSIS
     Waits for all assigned profiles to be installed on a device.
@@ -3234,7 +3339,7 @@ function Wait-UemProfilesInstalled {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $success = Wait-UemProfilesInstalled -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DeviceId 12345
+    $success = Wait-ProfilesInstalled -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DeviceId 12345
     if ($success) { Write-Host "All profiles installed" }
     
     .OUTPUTS
@@ -3264,8 +3369,7 @@ function Wait-UemProfilesInstalled {
     $profilesComplete = $false
     $attemptCount = 0
     
-    Write-Log -Message "Waiting for assigned profiles to install on device: $DeviceId" -Level "Info"
-    
+    Write-Log -Message "Waiting for assigned profiles to install on device: $DeviceId" -Level "Info"    
     $endpoint = "$Server/API/mdm/devices/$DeviceId/profiles"
     
     while (-not $profilesComplete -and $attemptCount -lt $MaxAttempts) {
@@ -3281,8 +3385,7 @@ function Wait-UemProfilesInstalled {
                 $installedCount = @($installedProfiles).Count
                 $pendingCount = @($pendingProfiles).Count
                 
-                Write-Log -Message "Profile status: $installedCount/$assignedCount installed, $pendingCount pending" -Level "Info"
-                
+                Write-Log -Message "Profile status: $installedCount/$assignedCount installed, $pendingCount pending" -Level "Info"                
                 if ($pendingCount -eq 0) {
                     $profilesComplete = $true
                     Write-Log -Message "All assigned profiles installed successfully" -Level "Success"
@@ -3304,122 +3407,8 @@ function Wait-UemProfilesInstalled {
         }
     }
     
-    Write-Log -Message "Profile installation did not complete within timeout period" -Level "Error"
+    Write-Debug "Profile installation did not complete within timeout period"
     return $false
-}
-
-function Invoke-OGSearch {
-    <#
-    .SYNOPSIS
-    Search for Organization Groups and prompt user to select from results.
-    
-    .DESCRIPTION
-    Queries Workspace ONE UEM for Organization Groups matching a partial name search.
-    If multiple matches found, displays list and prompts user for selection.
-    Returns the selected Organization Group with UUID, Name, GroupId, and Country properties.
-    
-    .PARAMETER Server
-    Workspace ONE UEM server hostname or FQDN (e.g., uem.example.com).
-    
-    .PARAMETER Auth
-    Authorization credential in format "Basic {base64string}" (for Basic auth) or "Bearer {token}" (for OAuth2).
-    Typically obtained from Get-ServerAuth -cred property.
-    
-    .PARAMETER ApiKey
-    Workspace ONE UEM API Key (aw-tenant-code) for authentication.
-    
-    .PARAMETER OrgGroup
-    Organization Group name or partial name to search for.
-    
-    .PARAMETER Debug
-    Enable debug output to console.
-    
-    .EXAMPLE
-    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass123" -ApiKey "key" -OGName "IT"
-    $selectedOG = Invoke-OGSearch -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -OrgGroup "IT"
-    Write-Host "Selected OG: $($selectedOG.Name) with UUID: $($selectedOG.Uuid)"
-    
-    .OUTPUTS
-    PSCustomObject with Uuid, Name, GroupId, and Country properties of selected Organization Group, or $null if user cancels
-    #>
-    param (
-        [Parameter(Mandatory=$true)]
-        [string]$Server,
-        
-        [Parameter(Mandatory=$true)]
-        [string]$Auth,
-        
-        [Parameter(Mandatory=$true)]
-        [string]$ApiKey,
-        
-        [Parameter(Mandatory=$true)]
-        [string]$OrgGroup,
-        
-        [Parameter(Mandatory=$false)]
-        [bool]$Debug = $false
-    )
-    
-    $OGSearch = Get-OG -Server $Server -Auth $Auth -ApiKey $ApiKey -OrgGroup $OrgGroup -Debug $Debug
-    $OGSearchOGs = $OGSearch.OrganizationGroups
-    $OGSearchTotal = $OGSearch.TotalResults
-    
-    if($Debug){ 
-        Write-Log -Message "OGSearch: $OGSearch" -Level "Info"
-    }
-    
-    if($null -eq $OGSearch){
-        Write-Log -Message "Server Authentication or Server Connection Failure" -Level "Error"
-        return $null
-    } elseif ($OGSearchTotal -eq 1){
-        $selectedOG = [PSCustomObject]@{
-            Uuid = $OGSearch.OrganizationGroups[0].Uuid
-            Name = $OGSearch.OrganizationGroups[0].Name
-            GroupId = $OGSearch.OrganizationGroups[0].GroupId
-            Country = $OGSearch.OrganizationGroups[0].Country
-        }
-        if($Debug){ 
-            Write-Log -Message "Selected OG UUID: $($selectedOG.Uuid)" -Level "Info"
-        }
-        return $selectedOG
-    } elseif ($OGSearchTotal -gt 1) {
-        $ValidChoices = 0..($OGSearchOGs.Count -1)
-        $ValidChoices += 'Q'
-        Write-Host "`nMultiple OGs found. Please select an OG from the list:" -ForegroundColor Yellow
-        $Choice = ''
-        while ([string]::IsNullOrEmpty($Choice)) {
-
-            $i = 0
-            foreach ($OG in $OGSearchOGs) {
-                Write-Host ('{0}: {1}       {2}       {3}' -f $i, $OG.name, $OG.GroupId, $OG.Country)
-                $i += 1
-            }
-
-            $Choice = Read-Host -Prompt 'Type the number that corresponds to the OG or Press "Q" to quit'
-            if ($Choice -in $ValidChoices) {
-                if ($Choice -eq 'Q'){
-                    Write-Log -Message "User exited OG selection" -Level "Info"
-                    return $null
-                } else {
-                    $selectedOG = [PSCustomObject]@{
-                        Uuid = $OGSearchOGs[$Choice].Uuid
-                        Name = $OGSearchOGs[$Choice].Name
-                        GroupId = $OGSearchOGs[$Choice].GroupId
-                        Country = $OGSearchOGs[$Choice].Country
-                    }
-                    return $selectedOG
-                }
-            } else {
-                [console]::Beep(1000, 300)
-                Write-Warning ('    [ {0} ] is NOT a valid selection.' -f $Choice)
-                Write-Warning '    Please try again ...'
-                pause
-                $Choice = ''
-            }
-        }
-    } else {
-        Write-Log -Message "No Organization Groups found matching '$OrgGroup'" -Level "Error"
-        return $null
-    }
 }
 
 function Invoke-DownloadAirwatchAgent {
@@ -3443,8 +3432,7 @@ function Invoke-DownloadAirwatchAgent {
     .EXAMPLE
     $DownloadPath = "C:\Temp\AirwatchAgent.msi"
     Invoke-DownloadAirwatchAgent -OutputPath $DownloadPath
-    Write-Log -Message "Download completed to: $DownloadPath" -Level "Success"
-    
+    Write-Log -Message "Download completed to: $DownloadPath" -Level "Success"    
     .OUTPUTS
     System.Int32 - HTTP status code (200 for success, error code for failure)
     #>
@@ -3459,8 +3447,7 @@ function Invoke-DownloadAirwatchAgent {
         $url = "https://packages.omnissa.com/wsone/AirwatchAgent.msi"
         
         Write-Log -Message "Starting download of AirwatchAgent.msi from $url" -Level "Info"
-        Write-Log -Message "Output destination: $OutputPath" -Level "Info"
-        
+        Write-Log -Message "Output destination: $OutputPath" -Level "Info"        
         $Response = Invoke-WebRequest -Uri $url -OutFile $OutputPath -ErrorAction Stop
         
         if ($Response.StatusCode -eq 200) {
@@ -3469,7 +3456,7 @@ function Invoke-DownloadAirwatchAgent {
         }
     } catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        Write-Log -Message "Failed to download AirwatchAgent.msi. Status Code: $StatusCode. Error: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Failed to download AirwatchAgent.msi. Status Code: $StatusCode. Error: $($_.Exception.Message)"
         return $StatusCode
     }
 }
@@ -3576,8 +3563,7 @@ function Invoke-CreateTask {
         Write-Log -Message "Creating scheduled task: $TaskName" -Level "Info"
         Write-Log -Message "  Trigger Type: $TriggerType" -Level "Info"
         Write-Log -Message "  Command: $cmd" -Level "Info"
-        Write-Log -Message "  Arguments: $fullArguments" -Level "Info"
-        
+        Write-Log -Message "  Arguments: $fullArguments" -Level "Info"        
         # Validate ScheduleTime for Daily/Weekly
         if ($TriggerType -in @("Daily", "Weekly") -and [string]::IsNullOrEmpty($ScheduleTime)) {
             throw "ScheduleTime parameter is required for TriggerType '$TriggerType'"
@@ -3632,7 +3618,7 @@ function Invoke-CreateTask {
         Write-Log -Message "Successfully created scheduled task: $TaskName" -Level "Success"
         return $true
     } catch {
-        Write-Log -Message "Error creating scheduled task: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error creating scheduled task: $($_.Exception.Message)"
         return $false
     }
 }
@@ -3722,7 +3708,6 @@ function Get-App {
         $queryDescription = if ($descriptionParts.Count -gt 0) { $descriptionParts -join ', ' } else { 'all applications' }
 
         Write-Log -Message "Querying applications ($queryDescription)" -Level "Info"
-
         # Recursive pagination function (defined inline). A page is treated as the last one
         # once it returns fewer than PageSize records - this endpoint's response does not
         # reliably expose a trustworthy total count, so this is more robust than an assumption.
@@ -3764,7 +3749,7 @@ function Get-App {
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving applications: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving applications: $($_.Exception.Message)"
         return $null
     }
 }
@@ -3830,8 +3815,7 @@ function Invoke-ChunkandUpload {
         $totalSize = $fileInfo.Length
         $totalChunks = [math]::Ceiling($totalSize / $ChunkSizeBytes)
         
-        Write-Log -Message "Starting chunked upload: $($fileInfo.Name) ($totalSize bytes, $totalChunks chunks)" -Level "Info"
-        
+        Write-Log -Message "Starting chunked upload: $($fileInfo.Name) ($totalSize bytes, $totalChunks chunks)" -Level "Info"        
         $reader = [System.IO.File]::OpenRead($FilePath)
         $chunkNumber = 0
         $transactionId = ""
@@ -3855,8 +3839,7 @@ function Invoke-ChunkandUpload {
                 # Convert to Base64
                 $base64Chunk = [Convert]::ToBase64String($chunkData, [System.Base64FormattingOptions]::None)
                 
-                Write-Log -Message "Uploading chunk $chunkNumber/$totalChunks ($bytesRead bytes)" -Level "Info"
-                
+                Write-Log -Message "Uploading chunk $chunkNumber/$totalChunks ($bytesRead bytes)" -Level "Info"                
                 # Create chunk payload
                 $chunkPayload = @{
                     TransactionId         = $transactionId
@@ -3884,7 +3867,7 @@ function Invoke-ChunkandUpload {
         Write-Log -Message "Chunked upload completed. Final TransactionId: $transactionId" -Level "Success"
         return $transactionId
     } catch {
-        Write-Log -Message "Error during chunked upload: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error during chunked upload: $($_.Exception.Message)"
         return $null
     }
 }
@@ -3948,16 +3931,14 @@ function Invoke-UploadfromLink {
     )
     
     try {
-        Write-Log -Message "Validating URL accessibility: $ApplicationUrl" -Level "Info"
-        
+        Write-Log -Message "Validating URL accessibility: $ApplicationUrl" -Level "Info"        
         # Validate URL is accessible
         $urlTest = Invoke-WebRequest -Uri $ApplicationUrl -DisableKeepAlive -UseBasicParsing -Method Head -ErrorAction Stop
         if ($urlTest.StatusCode -ne 200) {
             throw "URL returned status code $($urlTest.StatusCode)"
         }
         
-        Write-Log -Message "URL validation successful. Creating blob for: $FileName" -Level "Info"
-        
+        Write-Log -Message "URL validation successful. Creating blob for: $FileName" -Level "Info"        
         # Escape URL for API
         $escapedUrl = [System.Uri]::EscapeDataString($ApplicationUrl)
         
@@ -3973,12 +3954,12 @@ function Invoke-UploadfromLink {
             throw "API did not return blob ID"
         }
     } catch {
-        Write-Log -Message "Error creating blob from URL: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error creating blob from URL: $($_.Exception.Message)"
         return $null
     }
 }
 
-function New-UemApplication {
+function New-Application {
     <#
     .SYNOPSIS
     Creates an internal application in Workspace ONE UEM.
@@ -4027,7 +4008,7 @@ function New-UemApplication {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $result = New-UemApplication -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    $result = New-Application -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -ApplicationName "MyApp" -Platform WinRT -OrganizationGroupUuid "550e8400-e29b-41d4-a716-446655440000" `
         -BlobId "12345" -ApplicationVersion "1.0" -BundleId 1
     
@@ -4041,7 +4022,7 @@ function New-UemApplication {
         ApplicationVersion = "1.0"
         BundleId = 1
     }
-    $result = New-UemApplication -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -AppProperties $appProps
+    $result = New-Application -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -AppProperties $appProps
     
     .OUTPUTS
     PSCustomObject with ApplicationId, status, and creation details
@@ -4100,12 +4081,11 @@ function New-UemApplication {
         }
         
         if (-not $TransactionId -and -not $BlobId) {
-            Write-Log -Message "Either TransactionId or BlobId must be provided" -Level "Error"
+            Write-Debug "Either TransactionId or BlobId must be provided"
             return $null
         }
         
-        Write-Log -Message "Creating application: $ApplicationName (Platform: $Platform)" -Level "Info"
-        
+        Write-Log -Message "Creating application: $ApplicationName (Platform: $Platform)" -Level "Info"        
         # Build application properties
         $appBody = @{
             ApplicationName = $ApplicationName
@@ -4136,7 +4116,7 @@ function New-UemApplication {
             return $null
         }
     } catch {
-        Write-Log -Message "Error creating application: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error creating application: $($_.Exception.Message)"
         return $null
     }
 }
@@ -4165,7 +4145,7 @@ function Get-Baseline {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $baselines = Get-Baseline -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -GroupUuid "550e8400-e29b-41d4-a716-446655440000"
+    $baselines = Get-Baseline -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -GroupUuid $auth.uuid
     $baselines | Select-Object name, description, version | Format-Table
     
     .OUTPUTS
@@ -4187,8 +4167,7 @@ function Get-Baseline {
     )
     
     try {
-        Write-Log -Message "Retrieving baselines for organization group: $GroupUuid" -Level "Info"
-        
+        Write-Log -Message "Retrieving baselines for organization group: $GroupUuid" -Level "Info"        
         $endpoint = "$Server/api/mdm/groups/$GroupUuid/baselines"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
@@ -4200,7 +4179,7 @@ function Get-Baseline {
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving baselines: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving baselines: $($_.Exception.Message)"
         return $null
     }
 }
@@ -4242,7 +4221,7 @@ function Get-DevicesInBaseline {
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
     $devices = Get-DevicesInBaseline -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
-        -GroupUuid "550e8400-e29b-41d4-a716-446655440000" -BaselineUuid "baseline-uuid" `
+        -GroupUuid $auth.uuid -BaselineUuid "baseline-uuid" `
         -ComplianceLevel "NonCompliant,Intermediate"
     
     .OUTPUTS
@@ -4276,8 +4255,7 @@ function Get-DevicesInBaseline {
     )
     
     try {
-        Write-Log -Message "Retrieving devices in baseline $BaselineUuid (Status: $Status, Compliance: $ComplianceLevel)" -Level "Info"
-        
+        Write-Log -Message "Retrieving devices in baseline $BaselineUuid (Status: $Status, Compliance: $ComplianceLevel)" -Level "Info"        
         $endpoint = "$Server/api/mdm/groups/$GroupUuid/baselines/$BaselineUuid/devices?start_index=0&sort_asc=true&max_results=$MaxResults&sort_by=id&status=$Status&compliance_level=$ComplianceLevel"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
@@ -4289,7 +4267,7 @@ function Get-DevicesInBaseline {
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving devices in baseline: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving devices in baseline: $($_.Exception.Message)"
         return $null
     }
 }
@@ -4331,7 +4309,7 @@ function Get-DevicePoliciesInBaseline {
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
     $policies = Get-DevicePoliciesInBaseline -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
-        -GroupUuid "550e8400-e29b-41d4-a716-446655440000" -BaselineUuid "baseline-uuid" `
+        -GroupUuid $auth.uuid -BaselineUuid "baseline-uuid" `
         -DeviceUuid "device-uuid" -ComplianceLevel "NonCompliant"
     
     .OUTPUTS
@@ -4365,8 +4343,7 @@ function Get-DevicePoliciesInBaseline {
     )
     
     try {
-        Write-Log -Message "Retrieving policies for device $DeviceUuid in baseline (Compliance: $ComplianceLevel)" -Level "Info"
-        
+        Write-Log -Message "Retrieving policies for device $DeviceUuid in baseline (Compliance: $ComplianceLevel)" -Level "Info"        
         $endpoint = "$Server/api/mdm/groups/$GroupUuid/baselines/$BaselineUuid/devices/$DeviceUuid/policies?offset=0&sort_order=asc&limit=$Limit&sort_by=compliance_level&compliance_level=$ComplianceLevel"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
@@ -4378,7 +4355,7 @@ function Get-DevicePoliciesInBaseline {
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving device policies: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving device policies: $($_.Exception.Message)"
         return $null
     }
 }
@@ -4408,9 +4385,9 @@ function Get-BaselineAssignments {
     The baseline UUID to retrieve assignments for.
     
     .EXAMPLE
-    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
+    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "OGName"
     $assignments = Get-BaselineAssignments -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
-        -GroupUuid "550e8400-e29b-41d4-a716-446655440000" -BaselineUuid "baseline-uuid"
+        -GroupUuid $auth.uuid -BaselineUuid "baseline-uuid"
     $assignments.assigned_smart_groups | Select-Object name | Format-Table
     
     .OUTPUTS
@@ -4435,8 +4412,7 @@ function Get-BaselineAssignments {
     )
     
     try {
-        Write-Log -Message "Retrieving assignments for baseline $BaselineUuid" -Level "Info"
-        
+        Write-Log -Message "Retrieving assignments for baseline $BaselineUuid" -Level "Info"        
         $endpoint = "$Server/api/mdm/groups/$GroupUuid/baselines/$BaselineUuid/assignments"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 2 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
@@ -4450,7 +4426,7 @@ function Get-BaselineAssignments {
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving baseline assignments: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving baseline assignments: $($_.Exception.Message)"
         return $null
     }
 }
@@ -4480,9 +4456,9 @@ function Get-BaselineSummary {
     The baseline UUID to retrieve summary for.
     
     .EXAMPLE
-    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
+    $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "OGName"
     $summary = Get-BaselineSummary -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
-        -GroupUuid "550e8400-e29b-41d4-a716-446655440000" -BaselineUuid "baseline-uuid"
+        -GroupUuid $auth.uuid -BaselineUuid "baseline-uuid"
     $summary.summary.compliance | Format-Table
     
     .OUTPUTS
@@ -4507,20 +4483,19 @@ function Get-BaselineSummary {
     )
     
     try {
-        Write-Log -Message "Retrieving summary for baseline $BaselineUuid" -Level "Info"
-        
+        Write-Log -Message "Retrieving summary for baseline $BaselineUuid" -Level "Info"        
         $endpoint = "$Server/api/mdm/groups/$GroupUuid/baselines/$BaselineUuid`?customizations=true&summary=true"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 2 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
-        if ($response) {
-            Write-Log -Message "Retrieved baseline summary with customizations and policies" -Level "Success"
+        if ($response -and $response.PSObject.Properties.Name -notcontains 'Error' -and $response -ne 'Offline') {
+            Write-Debug "Retrieved baseline summary with customizations and policies"
             return $response
         } else {
-            Write-Log -Message "No summary data found" -Level "Info"
+            Write-Log -Message "No summary data found (or error/offline): $response" -Level "Warn"
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving baseline summary: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving baseline summary: $($_.Exception.Message)"
         return $null
     }
 }
@@ -4582,31 +4557,31 @@ function Get-BaselineTemplate {
     )
     
     try {
-        Write-Log -Message "Retrieving template details for vendor=$VendorTemplateUuid, osVersion=$OsVersionUuid, securityLevel=$SecurityLevelUuid" -Level "Info"
-        
+        Write-Log -Message "Retrieving template details for vendor=$VendorTemplateUuid, osVersion=$OsVersionUuid, securityLevel=$SecurityLevelUuid" -Level "Info"        
         $endpoint = "$Server/api/mdm/baselines/templates/search/$VendorTemplateUuid`?osVersionUUID=$OsVersionUuid&securityLevelUUID=$SecurityLevelUuid&policyTree=true"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
         if ($response) {
-            Write-Log -Message "Retrieved baseline template with policy tree" -Level "Success"
+            Write-Debug "Retrieved baseline template with policy tree"
+            Write-Debug "Template details retrieved: $($response | ConvertTo-Json -Depth 5)"
             return $response
         } else {
             Write-Log -Message "No template data found" -Level "Info"
             return $null
         }
     } catch {
-        Write-Log -Message "Error retrieving baseline template: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving baseline template: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Get-UemDevicesExtensive {
+function Get-Devices {
     <#
     .SYNOPSIS
-    Retrieves all devices for an organization group using recursive pagination with extensivesearch API.
+    Retrieves all devices for an organization group using recursive pagination with v3 search API.
     
     .DESCRIPTION
-    Queries all devices using the /api/mdm/devices/extensivesearch endpoint with automatic recursive pagination.
+    Queries all devices using the /api/mdm/devices/search endpoint with automatic recursive pagination.
     Handles large device counts efficiently without memory issues. Best for comprehensive device queries with full data.
     
     .PARAMETER Server
@@ -4617,17 +4592,20 @@ function Get-UemDevicesExtensive {
     
     .PARAMETER ApiKey
     The API key (aw-tenant-code).
+
+    .PARAMETER GroupUuid
+    The organization group UUID to retrieve baselines for.
     
     .PARAMETER PageSize
     Number of records per page. Default is 500 (max: 500).
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $allDevices = Get-UemDevicesExtensive -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $allDevices = Get-Devices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -GroupUuid $auth.uuid -PageSize 500
     $allDevices | Where-Object { $_.EnrollmentStatus -eq "Enrolled" } | Select-Object DeviceReportedName | Format-Table
     
     .OUTPUTS
-    PSCustomObject array with all device records from extensive search
+    PSCustomObject array with all device records from search
     #>
     [CmdletBinding()]
     param (
@@ -4639,14 +4617,16 @@ function Get-UemDevicesExtensive {
         
         [Parameter(Mandatory = $true)]
         [string]$ApiKey,
+
+        [Parameter(Mandatory = $false)]
+        [string]$GroupUuid,
         
         [Parameter(Mandatory = $false)]
         [int]$PageSize = 500
     )
     
     try {
-        Write-Log -Message "Starting extensive device query with recursive pagination (PageSize: $PageSize)" -Level "Info"
-        
+        Write-Log -Message "Starting device query with recursive pagination (PageSize: $PageSize)" -Level "Info"        
         # Recursive pagination function (defined inline)
         function QueryDevicesRecursive {
             param (
@@ -4654,10 +4634,10 @@ function Get-UemDevicesExtensive {
                 [array]$Records
             )
             
-            Write-Log -Message "Querying page $Page (PageSize: $PageSize, Current records: $($Records.Count))" -Level "Info"
-            
-            $endpoint = "$Server/api/mdm/devices/extensivesearch?page=$Page&pagesize=$PageSize"
-            $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
+            Write-Log -Message "Querying page $Page (PageSize: $PageSize, Current records: $($Records.Count))" -Level "Info"            
+            $endpoint = "$Server/api/mdm/devices/search?page=$Page&pagesize=$PageSize"
+            $apiVersion = 3
+            $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion $apiVersion -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
             
             if ($response -and $response.Devices) {
                 $Records = $Records + $response.Devices
@@ -4682,15 +4662,15 @@ function Get-UemDevicesExtensive {
         # Start recursive pagination from page 0
         $allDevices = QueryDevicesRecursive -Page 0 -Records @()
         
-        Write-Log -Message "Retrieved $($allDevices.Count) devices total" -Level "Success"
+        Write-Log -Message "Retrieved $($allDevices.Count) devices total" -Level "Info"
         return $allDevices
     } catch {
-        Write-Log -Message "Error retrieving devices extensively: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving devices extensively: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Get-UemStaleDevices {
+function Get-StaleDevices {
     <#
     .SYNOPSIS
     Identifies devices that have not communicated with UEM within a specified number of days.
@@ -4716,12 +4696,12 @@ function Get-UemStaleDevices {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $staleDevices = Get-UemStaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DaysSinceLastSeen 90
+    $staleDevices = Get-StaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DaysSinceLastSeen 90
     $staleDevices | Select-Object DeviceReportedName, SerialNumber, LastSeen | Format-Table
     
     .EXAMPLE
     # Get devices inactive for 120 days
-    $oldDevices = Get-UemStaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DaysSinceLastSeen 120
+    $oldDevices = Get-StaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DaysSinceLastSeen 120
     
     .OUTPUTS
     PSCustomObject array containing stale device details
@@ -4745,14 +4725,12 @@ function Get-UemStaleDevices {
     )
     
     try {
-        Write-Log -Message "Retrieving stale devices (not seen in $DaysSinceLastSeen days)" -Level "Info"
-        
+        Write-Log -Message "Retrieving stale devices (not seen in $DaysSinceLastSeen days)" -Level "Info"        
         # Calculate cutoff date
         $cutoffDate = (Get-Date).AddDays(-$DaysSinceLastSeen).ToString('yyyy-MM-dd')
-        Write-Log -Message "Cutoff date: $cutoffDate" -Level "Info"
-        
+        Write-Log -Message "Cutoff date: $cutoffDate" -Level "Info"        
         # Get all devices
-        $allDevices = Get-UemDevicesExtensive -Server $Server -Auth $Auth -ApiKey $ApiKey -PageSize $PageSize
+        $allDevices = Get-Devices -Server $Server -Auth $Auth -ApiKey $ApiKey -PageSize $PageSize
         
         if (-not $allDevices) {
             Write-Log -Message "No devices found" -Level "Info"
@@ -4770,12 +4748,12 @@ function Get-UemStaleDevices {
         Write-Log -Message "Found $($staleDevices.Count) stale devices" -Level "Success"
         return $staleDevices
     } catch {
-        Write-Log -Message "Error retrieving stale devices: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving stale devices: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Get-UemDuplicateDevices {
+function Get-DuplicateDevices {
     <#
     .SYNOPSIS
     Identifies devices with duplicate serial numbers.
@@ -4806,12 +4784,12 @@ function Get-UemDuplicateDevices {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $duplicates = Get-UemDuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $duplicates = Get-DuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
     $duplicates | Group-Object SerialNumber | Select-Object Name, @{N="Count";E={$_.Group.Count}} | Format-Table
     
     .EXAMPLE
     # Get only devices to delete (keeping the newest)
-    $toDelete = Get-UemDuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -KeepNewest
+    $toDelete = Get-DuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -KeepNewest
     
     .OUTPUTS
     PSCustomObject array of duplicate devices
@@ -4838,10 +4816,9 @@ function Get-UemDuplicateDevices {
     )
     
     try {
-        Write-Log -Message "Retrieving duplicate devices" -Level "Info"
-        
+        Write-Log -Message "Retrieving duplicate devices" -Level "Info"        
         # Get all devices
-        $allDevices = Get-UemDevicesExtensive -Server $Server -Auth $Auth -ApiKey $ApiKey -PageSize $PageSize
+        $allDevices = Get-Devices -Server $Server -Auth $Auth -ApiKey $ApiKey -PageSize $PageSize
         
         if (-not $allDevices) {
             Write-Log -Message "No devices found" -Level "Info"
@@ -4858,8 +4835,7 @@ function Get-UemDuplicateDevices {
         # Group by serial and find duplicates
         $grouped = $allDevices | Group-Object -Property SerialNumber | Where-Object { $_.Count -gt 1 }
         
-        Write-Log -Message "Found $($grouped.Count) unique serial numbers with duplicates" -Level "Info"
-        
+        Write-Log -Message "Found $($grouped.Count) unique serial numbers with duplicates" -Level "Info"        
         if (-not $grouped) {
             Write-Log -Message "No duplicates found" -Level "Info"
             return $null
@@ -4882,12 +4858,12 @@ function Get-UemDuplicateDevices {
             return $grouped.Group
         }
     } catch {
-        Write-Log -Message "Error retrieving duplicate devices: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving duplicate devices: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Get-UemProblematicDevices {
+function Get-ProblematicDevices {
     <#
     .SYNOPSIS
     Identifies devices with invalid or placeholder serial numbers.
@@ -4910,7 +4886,7 @@ function Get-UemProblematicDevices {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $problematic = Get-UemProblematicDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $problematic = Get-ProblematicDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
     $problematic | Select-Object DeviceReportedName, SerialNumber, Platform | Format-Table
     
     .OUTPUTS
@@ -4932,8 +4908,7 @@ function Get-UemProblematicDevices {
     )
     
     try {
-        Write-Log -Message "Retrieving devices with problematic serials" -Level "Info"
-        
+        Write-Log -Message "Retrieving devices with problematic serials" -Level "Info"        
         # Define problematic serial patterns
         $problematicSerials = @(
             'System Serial Number',
@@ -4948,7 +4923,7 @@ function Get-UemProblematicDevices {
         )
         
         # Get all devices
-        $allDevices = Get-UemDevicesExtensive -Server $Server -Auth $Auth -ApiKey $ApiKey -PageSize $PageSize
+        $allDevices = Get-Devices -Server $Server -Auth $Auth -ApiKey $ApiKey -PageSize $PageSize
         
         if (-not $allDevices) {
             Write-Log -Message "No devices found" -Level "Info"
@@ -4961,12 +4936,12 @@ function Get-UemProblematicDevices {
         Write-Log -Message "Found $($problematicDevices.Count) devices with problematic serials" -Level "Success"
         return $problematicDevices
     } catch {
-        Write-Log -Message "Error retrieving problematic devices: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving problematic devices: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Remove-UemDevices {
+function Remove-Devices {
     <#
     .SYNOPSIS
     Bulk deletes devices from UEM using the bulk API endpoint.
@@ -4993,14 +4968,14 @@ function Remove-UemDevices {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $staleDevices = Get-UemStaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DaysSinceLastSeen 180
-    $staleDevices.id.value | Remove-UemDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $staleDevices = Get-StaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -DaysSinceLastSeen 180
+    $staleDevices.id.value | Remove-Devices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
     
     .EXAMPLE
     # Pipe directly from device query
-    Get-UemDuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -KeepNewest | 
+    Get-DuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -KeepNewest | 
         ForEach-Object { $_.id.value } | 
-        Remove-UemDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Force
+        Remove-Devices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Force
     
     .INPUTS
     Array of device IDs (strings) from pipeline
@@ -5038,12 +5013,11 @@ function Remove-UemDevices {
     end {
         try {
             if (-not $allDeviceIds -or $allDeviceIds.Count -eq 0) {
-                Write-Log -Message "No device IDs provided for deletion" -Level "Error"
+                Write-Debug "No device IDs provided for deletion"
                 return $null
             }
             
-            Write-Log -Message "Preparing to delete $($allDeviceIds.Count) device(s)" -Level "Info"
-            
+            Write-Log -Message "Preparing to delete $($allDeviceIds.Count) device(s)" -Level "Info"            
             # Build quoted device ID array
             $quotedIds = @()
             foreach ($id in $allDeviceIds) {
@@ -5069,8 +5043,7 @@ function Remove-UemDevices {
 }
 "@
             
-            Write-Log -Message "Executing bulk delete API call" -Level "Info"
-            
+            Write-Log -Message "Executing bulk delete API call" -Level "Info"            
             $endpoint = "$Server/api/mdm/devices/bulk"
             $response = Invoke-AWApiCommand -Endpoint $endpoint -Method POST -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -Body $body -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
             
@@ -5082,13 +5055,13 @@ function Remove-UemDevices {
                 return $null
             }
         } catch {
-            Write-Log -Message "Error deleting devices: $($_.Exception.Message)" -Level "Error"
+            Write-Debug "Error deleting devices: $($_.Exception.Message)"
             return $null
         }
     }
 }
 
-function New-UemAppIcon {
+function New-AppIcon {
     <#
     .SYNOPSIS
     Uploads an application icon blob to Workspace ONE UEM.
@@ -5119,11 +5092,11 @@ function New-UemAppIcon {
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
     # Upload local icon
-    $blobId = New-UemAppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -IconFile "C:\icons\app.png"
+    $blobId = New-AppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -IconFile "C:\icons\app.png"
     
     .EXAMPLE
     # Upload from URL
-    $blobId = New-UemAppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    $blobId = New-AppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -IconFile "https://example.com/icons/app.png" -IsUrl
     
     .OUTPUTS
@@ -5151,8 +5124,7 @@ function New-UemAppIcon {
     )
     
     try {
-        Write-Log -Message "Uploading application icon" -Level "Info"
-        
+        Write-Log -Message "Uploading application icon" -Level "Info"        
         # Read icon file
         $iconContent = $null
         if ($IsUrl) {
@@ -5160,7 +5132,7 @@ function New-UemAppIcon {
             $iconContent = Invoke-WebRequest -Uri $IconFile -UseBasicParsing | Select-Object -ExpandProperty Content
         } else {
             if (-not (Test-Path $IconFile)) {
-                Write-Log -Message "Icon file not found: $IconFile" -Level "Error"
+                Write-Debug "Icon file not found: $IconFile"
                 return $null
             }
             $iconContent = Get-Content -Path $IconFile -Raw -AsByteStream
@@ -5183,12 +5155,12 @@ function New-UemAppIcon {
             return $null
         }
     } catch {
-        Write-Log -Message "Error uploading app icon: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error uploading app icon: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Invoke-DownloadUemAppBlob {
+function Invoke-DownloadAppBlob {
     <#
     .SYNOPSIS
     Downloads an internal application blob (package or icon) using the blob UUID API.
@@ -5232,12 +5204,12 @@ function Invoke-DownloadUemAppBlob {
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
     $winApps = Get-App -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Platform WinRT
-    Invoke-DownloadUemAppBlob -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Invoke-DownloadAppBlob -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -ApplicationId 1234 -BlobType ApplicationFileBlobGUID -OutputPath "C:\Temp\MyApp.msi"
 
     .EXAMPLE
     # Download directly by known UUID
-    Invoke-DownloadUemAppBlob -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Invoke-DownloadAppBlob -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -BlobUuid "57e366cf-9555-4d31-b387-cc7ae7feb149" -OutputPath "C:\Temp\blob.bin" -PassThru
     
     .OUTPUTS
@@ -5277,12 +5249,11 @@ function Invoke-DownloadUemAppBlob {
 
         if ($PSCmdlet.ParameterSetName -eq 'ByApplicationId') {
             Write-Log -Message "Resolving $BlobType for internal application ID: $ApplicationId" -Level "Info"
-
             $appEndpoint = "$Server/api/mam/apps/internal/$ApplicationId"
             $appDetails = Invoke-AWApiCommand -Endpoint $appEndpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
 
             if (-not $appDetails) {
-                Write-Log -Message "No application details returned for application ID: $ApplicationId" -Level "Error"
+                Write-Debug "No application details returned for application ID: $ApplicationId"
                 return $null
             }
 
@@ -5295,13 +5266,12 @@ function Invoke-DownloadUemAppBlob {
             }
 
             if (-not $resolvedBlobUuid) {
-                Write-Log -Message "Blob UUID field '$BlobType' was not present or empty for application ID: $ApplicationId" -Level "Error"
+                Write-Debug "Blob UUID field '$BlobType' was not present or empty for application ID: $ApplicationId"
                 return $null
             }
         }
 
         Write-Log -Message "Downloading blob UUID: $resolvedBlobUuid" -Level "Info"
-
         $outputDirectory = Split-Path -Path $OutputPath -Parent
         if ($outputDirectory -and -not (Test-Path -Path $outputDirectory)) {
             New-Item -Path $outputDirectory -ItemType Directory -Force | Out-Null
@@ -5324,15 +5294,15 @@ function Invoke-DownloadUemAppBlob {
             return $OutputPath
         }
 
-        Write-Log -Message "Blob download returned unexpected HTTP status code: $($response.StatusCode)" -Level "Error"
+        Write-Debug "Blob download returned unexpected HTTP status code: $($response.StatusCode)"
         return $null
     } catch {
-        Write-Log -Message "Error downloading application blob: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error downloading application blob: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Invoke-DownloadUemApp {
+function Invoke-DownloadApp {
     <#
     .SYNOPSIS
     Finds an internal application by name in Workspace ONE UEM and downloads its file blob.
@@ -5341,7 +5311,7 @@ function Invoke-DownloadUemApp {
     Searches for an internal application using Get-App, optionally scoped by organization
     group and/or platform. If multiple applications match, prompts the user to select one
     from a numbered list (same UX as Invoke-OGSearch). Downloads the selected application's
-    file using the blob UUID workflow (see Invoke-DownloadUemAppBlob).
+    file using the blob UUID workflow (see Invoke-DownloadAppBlob).
 
     .PARAMETER Server
     The WS1 UEM server hostname or FQDN (e.g., uem.example.com).
@@ -5367,7 +5337,7 @@ function Invoke-DownloadUemApp {
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
     $og = Invoke-OGSearch -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -OrgGroup $auth.OGName
-    Invoke-DownloadUemApp -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Invoke-DownloadApp -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -AppName "Google Chrome" -GroupId $og.GroupId -OutputPath "C:\Downloads"
 
     .OUTPUTS
@@ -5399,7 +5369,6 @@ function Invoke-DownloadUemApp {
     )
 
     Write-Log -Message "Searching for application '$AppName'..." -Level "Info"
-
     $getAppParams = @{
         Server  = $Server
         Auth    = $Auth
@@ -5411,7 +5380,7 @@ function Invoke-DownloadUemApp {
     $apps = Get-App @getAppParams
 
     if ($null -eq $apps -or $apps.Count -eq 0) {
-        Write-Log -Message "No application found matching '$AppName'" -Level "Error"
+        Write-Debug "No application found matching '$AppName'"
         return $null
     }
 
@@ -5447,23 +5416,21 @@ function Invoke-DownloadUemApp {
     $applicationId = $selectedApp.Id.Value
     $fileName = $selectedApp.ApplicationFileName
     Write-Log -Message "Selected: $($selectedApp.ApplicationName)  v$($selectedApp.AppVersion)  [$fileName]  Id=$applicationId" -Level "Info"
-
     $outFile = Join-Path $OutputPath $fileName
     Write-Log -Message "Downloading application blob to: $outFile" -Level "Info"
-
-    $result = Invoke-DownloadUemAppBlob -Server $Server -Auth $Auth -ApiKey $ApiKey `
+    $result = Invoke-DownloadAppBlob -Server $Server -Auth $Auth -ApiKey $ApiKey `
         -ApplicationId $applicationId -BlobType ApplicationFileBlobGUID -OutputPath $outFile -PassThru
 
     if ($result) {
         Write-Log -Message "Download complete: $($result.FullName)  ($($result.Length) bytes)" -Level "Success"
         return $result
     } else {
-        Write-Log -Message "Download failed for '$($selectedApp.ApplicationName)'" -Level "Error"
+        Write-Debug "Download failed for '$($selectedApp.ApplicationName)'"
         return $null
     }
 }
 
-function Invoke-UemSmartGroupCommand {
+function Invoke-SmartGroupCommand {
     <#
     .SYNOPSIS
     Executes a command on all devices in a Workspace ONE UEM smart group.
@@ -5496,12 +5463,12 @@ function Invoke-UemSmartGroupCommand {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    Invoke-UemSmartGroupCommand -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Invoke-SmartGroupCommand -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -SmartGroupId "sg-123" -Command "SyncDevice"
     
     .EXAMPLE
     # Lock all devices in a group and get device list
-    $lockedDevices = Invoke-UemSmartGroupCommand -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    $lockedDevices = Invoke-SmartGroupCommand -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -SmartGroupId "sg-456" -Command "Lock" -PassThru
     $lockedDevices.Count
     
@@ -5533,8 +5500,7 @@ function Invoke-UemSmartGroupCommand {
     )
     
     try {
-        Write-Log -Message "Retrieving devices from smart group: $SmartGroupId" -Level "Info"
-        
+        Write-Log -Message "Retrieving devices from smart group: $SmartGroupId" -Level "Info"        
         # Get devices from smart group
         $endpoint = "$Server/api/mdm/smartgroups/$SmartGroupId/devices?pagesize=$MaxDevices"
         $response = Invoke-AWApiCommand -Endpoint $endpoint -Method GET -ApiVersion 1 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
@@ -5545,8 +5511,7 @@ function Invoke-UemSmartGroupCommand {
         }
         
         $devices = $response.Devices
-        Write-Log -Message "Found $($devices.Count) device(s) in smart group. Executing command: $Command" -Level "Info"
-        
+        Write-Log -Message "Found $($devices.Count) device(s) in smart group. Executing command: $Command" -Level "Info"        
         # Execute command on each device
         $executedDevices = @()
         $successCount = 0
@@ -5561,24 +5526,23 @@ function Invoke-UemSmartGroupCommand {
                 $executedDevices += $device
                 $successCount++
             } catch {
-                Write-Log -Message "Failed to execute $Command on device $($device.DeviceReportedName): $($_.Exception.Message)" -Level "Error"
+                Write-Debug "Failed to execute $Command on device $($device.DeviceReportedName): $($_.Exception.Message)"
             }
         }
         
-        Write-Log -Message "Command '$Command' executed on $successCount device(s)" -Level "Success"
-        
+        Write-Log -Message "Command '$Command' executed on $successCount device(s)" -Level "Success"        
         if ($PassThru) {
             return $executedDevices
         } else {
             return $successCount
         }
     } catch {
-        Write-Log -Message "Error executing smart group command: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error executing smart group command: $($_.Exception.Message)"
         return 0
     }
 }
 
-function Get-UemDuplicateUsers {
+function Get-DuplicateUsers {
     <#
     .SYNOPSIS
     Identifies user accounts with duplicate usernames in Workspace ONE UEM.
@@ -5601,7 +5565,7 @@ function Get-UemDuplicateUsers {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $dupUsers = Get-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $dupUsers = Get-DuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
     $dupUsers | Select-Object Username, UserType, UUID | Format-Table
     
     .OUTPUTS
@@ -5624,8 +5588,7 @@ function Get-UemDuplicateUsers {
     )
     
     try {
-        Write-Log -Message "Retrieving users to identify duplicates (UserType: $UserType)" -Level "Info"
-        
+        Write-Log -Message "Retrieving users to identify duplicates (UserType: $UserType)" -Level "Info"        
         # Get all users with pagination
         $allUsers = @()
         $page = 0
@@ -5643,8 +5606,7 @@ function Get-UemDuplicateUsers {
             }
         } while ($response.Users.Count -eq $pageSize)
         
-        Write-Log -Message "Retrieved $($allUsers.Count) total users" -Level "Info"
-        
+        Write-Log -Message "Retrieved $($allUsers.Count) total users" -Level "Info"        
         # Filter by user type if specified
         if ($UserType -ne 'Any') {
             $userTypeValue = if ($UserType -eq 'BasicOnly') { 'Basic' } else { 'Directory' }
@@ -5669,18 +5631,18 @@ function Get-UemDuplicateUsers {
         Write-Log -Message "Found $($duplicateUsers.Count) duplicate user account(s) across $($grouped.Count) username(s)" -Level "Success"
         return $duplicateUsers
     } catch {
-        Write-Log -Message "Error retrieving duplicate users: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error retrieving duplicate users: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Remove-UemDuplicateUsers {
+function Remove-DuplicateUsers {
     <#
     .SYNOPSIS
     Deletes duplicate user accounts from Workspace ONE UEM.
     
     .DESCRIPTION
-    Removes duplicate user accounts identified by Get-UemDuplicateUsers.
+    Removes duplicate user accounts identified by Get-DuplicateUsers.
     Only deletes users with no enrolled devices (safe deletion).
     Users with active device enrollments must have devices removed first.
     Requires confirmation before deletion.
@@ -5702,8 +5664,8 @@ function Remove-UemDuplicateUsers {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $dupUsers = Get-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
-    $dupUsers | ForEach-Object { $_.UUID } | Remove-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $dupUsers = Get-DuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    $dupUsers | ForEach-Object { $_.UUID } | Remove-DuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
     
     .INPUTS
     String array of user UUIDs from pipeline or parameter
@@ -5740,12 +5702,11 @@ function Remove-UemDuplicateUsers {
     end {
         try {
             if (-not $allUserIds -or $allUserIds.Count -eq 0) {
-                Write-Log -Message "No user IDs provided for deletion" -Level "Error"
+                Write-Debug "No user IDs provided for deletion"
                 return 0
             }
             
-            Write-Log -Message "Preparing to delete $($allUserIds.Count) duplicate user account(s)" -Level "Info"
-            
+            Write-Log -Message "Preparing to delete $($allUserIds.Count) duplicate user account(s)" -Level "Info"            
             # Prompt for confirmation unless -Force is used
             if (-not $Force) {
                 $confirmation = Read-Host "About to delete $($allUserIds.Count) user account(s). Type 'DELETE' to confirm or any other key to cancel"
@@ -5764,20 +5725,20 @@ function Remove-UemDuplicateUsers {
                     $deletedCount++
                     Write-Log -Message "Deleted user: $userId" -Level "Info"
                 } catch {
-                    Write-Log -Message "Failed to delete user $userId`: $($_.Exception.Message)" -Level "Error"
+                    Write-Debug "Failed to delete user $userId`: $($_.Exception.Message)"
                 }
             }
             
             Write-Log -Message "Successfully deleted $deletedCount duplicate user account(s)" -Level "Success"
             return $deletedCount
         } catch {
-            Write-Log -Message "Error deleting duplicate users: $($_.Exception.Message)" -Level "Error"
+            Write-Debug "Error deleting duplicate users: $($_.Exception.Message)"
             return 0
         }
     }
 }
 
-function Get-UemDeviceNotes {
+function Get-DeviceNotes {
     <#
     .SYNOPSIS
     Retrieves console notes for devices in WS1 UEM.
@@ -5800,12 +5761,12 @@ function Get-UemDeviceNotes {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    $notes = Get-UemDeviceNotes -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -SerialNumber "ABC123XYZ"
+    $notes = Get-DeviceNotes -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -SerialNumber "ABC123XYZ"
     $notes | Format-List
     
     .EXAMPLE
     # Retrieve notes for multiple devices via pipeline
-    @("ABC123XYZ", "DEF456UVW") | Get-UemDeviceNotes -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+    @("ABC123XYZ", "DEF456UVW") | Get-DeviceNotes -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
     
     .OUTPUTS
     PSCustomObject with note content and metadata, or $null if no notes found or error occurs
@@ -5827,8 +5788,7 @@ function Get-UemDeviceNotes {
     
     process {
         try {
-            Write-Log -Message "Retrieving notes for device: $SerialNumber" -Level "Info"
-            
+            Write-Log -Message "Retrieving notes for device: $SerialNumber" -Level "Info"            
             $serialEncoded = [System.Web.HttpUtility]::UrlEncode($SerialNumber)
             $endpoint = "$Server/API/mdm/devices/notes?searchBy=SerialNumber&id=$serialEncoded"
             
@@ -5842,13 +5802,13 @@ function Get-UemDeviceNotes {
                 return $null
             }
         } catch {
-            Write-Log -Message "Error retrieving notes for device $SerialNumber`: $($_.Exception.Message)" -Level "Error"
+            Write-Debug "Error retrieving notes for device $SerialNumber`: $($_.Exception.Message)"
             return $null
         }
     }
 }
 
-function Update-UemDeviceProperty {
+function Update-DeviceProperty {
     <#
     .SYNOPSIS
     Updates device properties in WS1 UEM (friendly name, asset number, etc.).
@@ -5877,7 +5837,7 @@ function Update-UemDeviceProperty {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    Update-UemDeviceProperty -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Update-DeviceProperty -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -SerialNumber "ABC123XYZ" -FriendlyName "LAPTOP-001" -AssetNumber "ASSET-12345"
     
     .OUTPUTS
@@ -5905,8 +5865,7 @@ function Update-UemDeviceProperty {
     )
     
     try {
-        Write-Log -Message "Retrieving current properties for device: $SerialNumber" -Level "Info"
-        
+        Write-Log -Message "Retrieving current properties for device: $SerialNumber" -Level "Info"        
         # Get current device info
         $serialEncoded = [System.Web.HttpUtility]::UrlEncode($SerialNumber)
         $getEndpoint = "$Server/API/mdm/devices?searchBy=SerialNumber&id=$serialEncoded"
@@ -5914,13 +5873,12 @@ function Update-UemDeviceProperty {
         $deviceInfo = Invoke-AWApiCommand -Endpoint $getEndpoint -Method GET -ApiVersion 2 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
         if (-not $deviceInfo -or -not $deviceInfo.id) {
-            Write-Log -Message "Device not found: $SerialNumber" -Level "Error"
+            Write-Debug "Device not found: $SerialNumber"
             return $null
         }
         
         $deviceId = $deviceInfo.id.value
-        Write-Log -Message "Found device ID: $deviceId" -Level "Info"
-        
+        Write-Log -Message "Found device ID: $deviceId" -Level "Info"        
         # Build update body with current or new values
         $updateBody = @{}
         
@@ -5940,8 +5898,7 @@ function Update-UemDeviceProperty {
         
         # Update device
         $updateEndpoint = "$Server/API/mdm/devices/$deviceId"
-        Write-Log -Message "Updating device properties for ID: $deviceId" -Level "Info"
-        
+        Write-Log -Message "Updating device properties for ID: $deviceId" -Level "Info"        
         $response = Invoke-AWApiCommand -Endpoint $updateEndpoint -Method PUT -ApiVersion 2 -Auth $Auth -Apikey $ApiKey -Body $body -EnableRetry -MaxAttempts 3 -RetryIntervalSeconds 30
         
         if ($response) {
@@ -5952,12 +5909,12 @@ function Update-UemDeviceProperty {
             return $null
         }
     } catch {
-        Write-Log -Message "Error updating device properties for $SerialNumber`: $($_.Exception.Message)" -Level "Error"
+        Write-Debug "Error updating device properties for $SerialNumber`: $($_.Exception.Message)"
         return $null
     }
 }
 
-function Clear-UemDevicePasscode {
+function Clear-DevicePasscode {
     <#
     .SYNOPSIS
     Clears the passcode on one or more devices in WS1 UEM.
@@ -5984,11 +5941,11 @@ function Clear-UemDevicePasscode {
     
     .EXAMPLE
     $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pass" -ApiKey "key" -OGName "Corp"
-    Clear-UemDevicePasscode -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -SerialNumber "ABC123XYZ"
+    Clear-DevicePasscode -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -SerialNumber "ABC123XYZ"
     
     .EXAMPLE
     # Clear passcode for multiple devices
-    Clear-UemDevicePasscode -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Clear-DevicePasscode -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -SerialNumber @("ABC123XYZ", "DEF456UVW", "GHI789RST") -Force
     
     .OUTPUTS
@@ -6022,8 +5979,7 @@ function Clear-UemDevicePasscode {
     
     end {
         try {
-            Write-Log -Message "Preparing to clear passcode for $($allSerials.Count) device(s)" -Level "Info"
-            
+            Write-Log -Message "Preparing to clear passcode for $($allSerials.Count) device(s)" -Level "Info"            
             # Prompt for confirmation unless -Force is used
             if (-not $Force) {
                 $confirmation = Read-Host "About to clear passcode on $($allSerials.Count) device(s). Type 'CLEAR' to confirm or any other key to cancel"
@@ -6039,8 +5995,7 @@ function Clear-UemDevicePasscode {
                     $serialEncoded = [System.Web.HttpUtility]::UrlEncode($serial)
                     $endpoint = "$Server/API/mdm/devices/commands/ClearPasscode/device/SerialNumber/$serialEncoded"
                     
-                    Write-Log -Message "Clearing passcode for device: $serial" -Level "Info"
-                    
+                    Write-Log -Message "Clearing passcode for device: $serial" -Level "Info"                    
                     $response = Invoke-AWApiCommand -Endpoint $endpoint -Method POST -ApiVersion 2 -Auth $Auth -Apikey $ApiKey -EnableRetry -MaxAttempts 2 -RetryIntervalSeconds 10
                     
                     if ($response) {
@@ -6050,17 +6005,17 @@ function Clear-UemDevicePasscode {
                         Write-Log -Message "Passcode clear failed for device: $serial (no response)" -Level "Warn"
                     }
                 } catch {
-                    Write-Log -Message "Error clearing passcode for device $serial`: $($_.Exception.Message)" -Level "Error"
+                    Write-Debug "Error clearing passcode for device $serial`: $($_.Exception.Message)"
                 }
             }
             
             Write-Log -Message "Successfully initiated passcode clear for $clearCount/$($allSerials.Count) device(s)" -Level "Success"
             return $clearCount
         } catch {
-            Write-Log -Message "Error clearing device passcodes: $($_.Exception.Message)" -Level "Error"
+            Write-Debug "Error clearing device passcodes: $($_.Exception.Message)"
             return 0
         }
     }
 }
 
-Export-ModuleMember -Function Get-OG, Invoke-AWApiCommand, Get-CurrentLoggedonUser, Get-UserSIDLookup, Get-ReverseSID, Write-Log, Write-2Report, Show-Toast, Get-RegistryValue, Get-ServerAuth, Get-Log, Get-WSONEOAuthToken, Get-NewDeviceId, Invoke-AgentCleanup, Get-DevicesByCustomAttribute, Add-DeviceTag, Remove-DeviceTag, Get-DeviceTags, Get-DeviceEnrollmentStatus, Invoke-OGSearch, Get-Enrollment, Compare-EnrollmentSID, Disable-EnrollmentNotifications, Enable-EnrollmentNotifications, Invoke-RestMethodWithRetry, Get-UemAgentInstallInfo, Install-UemAgent, Remove-UemAgent, Get-EnrollmentInfoWithPolling, Wait-UemAppsInstalled, Wait-UemProfilesInstalled, New-Tag, Invoke-DownloadAirwatchAgent, Invoke-DownloadUemAppBlob, Invoke-CreateTask, Get-App, Invoke-ChunkandUpload, Invoke-UploadfromLink, Get-Baseline, Get-DevicesInBaseline, Get-DevicePoliciesInBaseline, Get-BaselineAssignments, Get-BaselineSummary, Get-BaselineTemplate, Get-UemDevicesExtensive, Get-UemStaleDevices, Get-UemDuplicateDevices, Get-UemProblematicDevices, Remove-UemDevices, New-UemAppIcon, New-UemApplication, Invoke-DownloadUemApp, Invoke-UemSmartGroupCommand, Get-UemDuplicateUsers, Remove-UemDuplicateUsers, Get-UemDeviceNotes, Update-UemDeviceProperty, Clear-UemDevicePasscode
+Export-ModuleMember -Function Add-DeviceTag, Clear-DevicePasscode, Compare-EnrollmentSID, Disable-EnrollmentNotifications, Enable-EnrollmentNotifications, Get-AgentInstallInfo, Get-App, Get-Baseline, Get-BaselineAssignments, Get-BaselineSummary, Get-BaselineTemplate, Get-CurrentLoggedonUser, Get-DeviceEnrollmentStatus, Get-DeviceNotes, Get-DevicePoliciesInBaseline, Get-DevicesByCustomAttribute, Get-Devices, Get-DevicesInBaseline, Get-DeviceTags, Get-DuplicateDevices, Get-DuplicateUsers, Get-Enrollment, Get-EnrollmentInfoWithPolling, Get-Log, Get-NewDeviceId, Get-OG, Get-ProblematicDevices, Get-RegistryValue, Get-ReverseSID, Get-ServerAuth, Get-StaleDevices, Get-UserSIDLookup, Get-WSONEOAuthToken, Install-Agent, Invoke-AgentCleanup, Invoke-AWApiCommand, Invoke-ChunkandUpload, Invoke-CreateTask, Invoke-DownloadAirwatchAgent, Invoke-DownloadApp, Invoke-DownloadAppBlob, Invoke-OGSearch, Invoke-RestMethodWithRetry, Invoke-SmartGroupCommand, Invoke-UploadfromLink, New-AppIcon, New-Application, New-Tag, Remove-Agent, Remove-Devices, Remove-DeviceTag, Remove-DuplicateUsers, Show-Toast, Update-DeviceProperty, Wait-AppsInstalled, Wait-ProfilesInstalled, Write-2Report, Write-Log

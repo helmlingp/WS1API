@@ -1,1 +1,7 @@
 .DS_Store
+*.log
+*.csv
+Tests/.ws1-creds.json
+Tests/*.log
+Tests/*.exe
+.claude

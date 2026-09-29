@@ -2,7 +2,7 @@
 
 A comprehensive PowerShell module for interacting with Omnissa Workspace ONE UEM RestAPI. Features OAuth 2.0 authentication with multi-datacenter support, complete device management operations, application distribution, user management, and advanced logging capabilities.
 
-**Module Version:** 1.1.0  
+**Module Version:** 1.2.0  
 **Functions Exported:** 58  
 **PowerShell Version Required:** 5.0+
 
@@ -71,25 +71,25 @@ Get-Command -Module WS1API
 |----------|-------------|
 | **Add-DeviceTag** | Apply tags to devices |
 | **Remove-DeviceTag** | Remove tags from devices |
-| **Get-UemDevicesExtensive** | Recursive pagination for all devices with full details |
-| **Get-UemStaleDevices** | Identify devices not seen in N days (default 90) |
-| **Get-UemDuplicateDevices** | Find duplicate devices by serial number with KeepNewest filter |
-| **Get-UemProblematicDevices** | Detect devices with invalid/placeholder serial numbers |
-| **Remove-UemDevices** | Bulk delete devices via /api/mdm/devices/bulk with confirmation |
-| **Get-UemDeviceNotes** | Retrieve console notes for devices |
-| **Update-UemDeviceProperty** | Update device properties (FriendlyName, AssetNumber) |
-| **Clear-UemDevicePasscode** | Bulk clear device passcodes with confirmation |
-| **Invoke-UemSmartGroupCommand** | Execute commands on smart group devices |
+| **Get-DevicesExtensive** | Recursive pagination for all devices with full details |
+| **Get-StaleDevices** | Identify devices not seen in N days (default 90) |
+| **Get-DuplicateDevices** | Find duplicate devices by serial number with KeepNewest filter |
+| **Get-ProblematicDevices** | Detect devices with invalid/placeholder serial numbers |
+| **Remove-Devices** | Bulk delete devices via /api/mdm/devices/bulk with confirmation |
+| **Get-DeviceNotes** | Retrieve console notes for devices |
+| **Update-DeviceProperty** | Update device properties (FriendlyName, AssetNumber) |
+| **Clear-DevicePasscode** | Bulk clear device passcodes with confirmation |
+| **Invoke-SmartGroupCommand** | Execute commands on smart group devices |
 
 ### Applications (7 functions)
 
 | Function | Description |
 |----------|-------------|
 | **Get-App** | Search or list UEM applications by name, group, and/or platform, with automatic pagination |
-| **New-UemAppIcon** | Upload app icons with BlobId return |
-| **New-UemApplication** | Create internal apps with platform validation (BundleId mandatory) |
-| **Invoke-DownloadUemAppBlob** | Download internal app icon/package blob by UUID or application ID |
-| **Invoke-DownloadUemApp** | Find an app by name (prompting on multiple matches) and download its blob |
+| **New-AppIcon** | Upload app icons with BlobId return |
+| **New-Application** | Create internal apps with platform validation (BundleId mandatory) |
+| **Invoke-DownloadAppBlob** | Download internal app icon/package blob by UUID or application ID |
+| **Invoke-DownloadApp** | Find an app by name (prompting on multiple matches) and download its blob |
 | **Invoke-ChunkandUpload** | Handle large file uploads with chunking |
 | **Invoke-UploadfromLink** | Upload application from external URL |
 
@@ -108,13 +108,13 @@ Get-Command -Module WS1API
 
 | Function | Description |
 |----------|-------------|
-| **Get-UemAgentInstallInfo** | Check Workspace ONE agent installation status |
-| **Install-UemAgent** | Install and enroll the WS1 Hub agent |
-| **Remove-UemAgent** | Uninstall the WS1 Hub agent |
+| **Get-AgentInstallInfo** | Check Workspace ONE agent installation status |
+| **Install-Agent** | Install and enroll the WS1 Hub agent |
+| **Remove-Agent** | Uninstall the WS1 Hub agent |
 | **Invoke-DownloadAirwatchAgent** | Download agent installer from UEM server |
 | **Invoke-AgentCleanup** | Remove Workspace ONE Agent and artifacts |
-| **Wait-UemAppsInstalled** | Wait for assigned apps to install on device |
-| **Wait-UemProfilesInstalled** | Wait for assigned profiles to install on device |
+| **Wait-AppsInstalled** | Wait for assigned apps to install on device |
+| **Wait-ProfilesInstalled** | Wait for assigned profiles to install on device |
 
 ### User Management & Enrollment (5 functions)
 
@@ -125,8 +125,8 @@ Get-Command -Module WS1API
 | **Get-ReverseSID** | Translate SID to username or group name |
 | **Compare-EnrollmentSID** | Compare current user SID with enrollment SID |
 | **Get-EnrollmentInfoWithPolling** | Poll UEM API for device enrollment info with retries |
-| **Get-UemDuplicateUsers** | Find duplicate user accounts |
-| **Remove-UemDuplicateUsers** | Delete duplicate user accounts with confirmation |
+| **Get-DuplicateUsers** | Find duplicate user accounts |
+| **Remove-DuplicateUsers** | Delete duplicate user accounts with confirmation |
 
 ### Local System & Utilities (5 functions)
 
@@ -187,15 +187,15 @@ $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pa
     -ApiKey "key" -OGName "Corp"
 
 # Find stale devices (not seen in 180 days)
-$staleDevices = Get-UemStaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+$staleDevices = Get-StaleDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
     -DaysSinceLastSeen 180 -PageSize 500
 
 # Find duplicate devices
-$duplicates = Get-UemDuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+$duplicates = Get-DuplicateDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
     -KeepNewest -ExcludeProblematicSerials
 
 # Remove devices (with confirmation)
-Remove-UemDevices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+Remove-Devices -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
     -DeviceIds ($duplicates | Select-Object -ExpandProperty Id)
 ```
 
@@ -207,7 +207,7 @@ $auth = Get-ServerAuth -Server "uem.example.com" -Username "admin" -Password "pa
     -ApiKey "key" -OGName "Corp"
 
 # Upload app icon
-$blobId = Send-UemAppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+$blobId = Send-AppIcon -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
     -IconFile "C:\path\to\icon.png"
 
 # Or upload chunked application file
@@ -215,7 +215,7 @@ $transId = Invoke-ChunkandUpload -Server $auth.Server -Auth $auth.cred -ApiKey $
     -FilePath "C:\app.ipa" -ChunkSizesMB 10
 
 # Create application (BundleId is mandatory for versioning)
-$app = New-UemApplication -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+$app = New-Application -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
     -ApplicationName "MyApp" -Platform iOS -BundleId 1001 `
     -OrganizationGroupUuid $auth.OrgGroupUUID -BlobId $blobId -ApplicationVersion "1.0"
 ```
@@ -224,18 +224,18 @@ $app = New-UemApplication -Server $auth.Server -Auth $auth.cred -ApiKey $auth.Ap
 
 ```powershell
 # Get all devices and filter
-$devices = Get-UemDevicesExtensive -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
+$devices = Get-DevicesExtensive -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey
 $problemDevices = $devices | Where-Object { $_.EnrollmentStatus -eq "Enrolled" }
 
 # Update device properties
 $problemDevices | ForEach-Object {
-    Update-UemDeviceProperty -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+    Update-DeviceProperty -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
         -SerialNumber $_.SerialNumber -FriendlyName "Updated-$($_.SerialNumber)"
 }
 
 # Clear passcodes for iOS devices
 $iosDevices = $devices | Where-Object { $_.Platform -eq "iOS" }
-$iosDevices | Select-Object -ExpandProperty SerialNumber | Clear-UemDevicePasscode `
+$iosDevices | Select-Object -ExpandProperty SerialNumber | Clear-DevicePasscode `
     -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey -Force
 ```
 
@@ -243,11 +243,11 @@ $iosDevices | Select-Object -ExpandProperty SerialNumber | Clear-UemDevicePassco
 
 ```powershell
 # Execute sync command on all devices in smart group
-$syncResult = Invoke-UemSmartGroupCommand -Server $auth.Server -Auth $auth.cred `
+$syncResult = Invoke-SmartGroupCommand -Server $auth.Server -Auth $auth.cred `
     -ApiKey $auth.ApiKey -SmartGroupId "sg-12345" -Command "SyncDevice"
 
 # Lock all devices and get affected list
-$lockedDevices = Invoke-UemSmartGroupCommand -Server $auth.Server -Auth $auth.cred `
+$lockedDevices = Invoke-SmartGroupCommand -Server $auth.Server -Auth $auth.cred `
     -ApiKey $auth.ApiKey -SmartGroupId "sg-67890" -Command "Lock" -PassThru
 
 Write-Log -Message "Locked $($lockedDevices.Count) devices" -Level "Success"
@@ -257,11 +257,11 @@ Write-Log -Message "Locked $($lockedDevices.Count) devices" -Level "Success"
 
 ```powershell
 # Find duplicate user accounts
-$duplicates = Get-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred `
+$duplicates = Get-DuplicateUsers -Server $auth.Server -Auth $auth.cred `
     -ApiKey $auth.ApiKey -UserType "BasicOnly"
 
 # Delete duplicates (with confirmation: type 'DELETE' to confirm)
-Remove-UemDuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
+Remove-DuplicateUsers -Server $auth.Server -Auth $auth.cred -ApiKey $auth.ApiKey `
     -UserIds ($duplicates | Select-Object -ExpandProperty Uuid)
 ```
 
@@ -312,7 +312,7 @@ For detailed function documentation, use PowerShell's built-in help system:
 
 ```powershell
 # Full help for a function
-Get-Help Get-UemDevicesExtensive -Full
+Get-Help Get-DevicesExtensive -Full
 
 # Get all available functions
 Get-Command -Module WS1API | Select-Object Name, Version
@@ -351,10 +351,10 @@ $result = Invoke-AWApiCommand -Endpoint $url -Method GET -Auth $auth -ApiKey $ke
 
 Functions optimized for bulk operations include:
 
-- **Remove-UemDevices**: Delete 100+ devices in single API call
-- **Invoke-UemSmartGroupCommand**: Execute commands on 1000+ devices
-- **Remove-UemDuplicateUsers**: Delete multiple user accounts
-- **Clear-UemDevicePasscode**: Bulk passcode clear with confirmation
+- **Remove-Devices**: Delete 100+ devices in single API call
+- **Invoke-SmartGroupCommand**: Execute commands on 1000+ devices
+- **Remove-DuplicateUsers**: Delete multiple user accounts
+- **Clear-DevicePasscode**: Bulk passcode clear with confirmation
 
 Pipeline input supported for accumulating items before batch processing.
 
